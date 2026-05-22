@@ -35,16 +35,18 @@ test("Vim core switches between insert and normal", () => {
 });
 
 test("Vim core emits Normal-mode insert-entry actions", () => {
-  for (const [key, action] of [
-    ["a", "placeCaretAfterCursor"],
-    ["A", "placeCaretAtLineEnd"],
-    ["I", "placeCaretAtFirstNonBlank"],
+  for (const [key, actions] of [
+    ["a", [{ type: "placeCaretAfterCursor" }]],
+    ["A", [{ type: "placeCaretAtLineEnd" }]],
+    ["I", [{ type: "placeCaretAtFirstNonBlank" }]],
+    ["o", [{ type: "insertLineBelow" }, { type: "placeCaretAtLineStart" }]],
+    ["O", [{ type: "insertLineAbove" }, { type: "placeCaretAtLineStart" }]],
   ] as const) {
     let result = getInitialVimSnapshot();
     result = transitionVim(result.snapshot, { type: "KEY", key: "escape" });
     result = transitionVim(result.snapshot, { type: "KEY", key });
     assert.equal(getVimMode(result.snapshot), "insert");
-    assert.deepEqual(result.actions, [{ type: action }]);
+    assert.deepEqual(result.actions, actions);
   }
 });
 

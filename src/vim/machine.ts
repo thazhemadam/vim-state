@@ -4,12 +4,15 @@ import {
   MOVE_CURSOR_DOWN,
   MOVE_CURSOR_LEFT,
   MOVE_CURSOR_RIGHT,
+  INSERT_LINE_ABOVE,
+  INSERT_LINE_BELOW,
   MOVE_CURSOR_TO_LINE_END,
   MOVE_CURSOR_TO_LINE_START,
   MOVE_CURSOR_UP,
   PLACE_CARET_AFTER_CURSOR,
   PLACE_CARET_AT_FIRST_NON_BLANK,
   PLACE_CARET_AT_LINE_END,
+  PLACE_CARET_AT_LINE_START,
   PLACE_CARET_BEFORE_CURSOR,
   PLACE_CURSOR_ON_PREVIOUS_CHARACTER,
 } from "./actions.js";
@@ -34,6 +37,9 @@ export const vimMachine = setup({
     [MOVE_CURSOR_RIGHT]: () => {},
     [MOVE_CURSOR_TO_LINE_START]: () => {},
     [MOVE_CURSOR_TO_LINE_END]: () => {},
+    [INSERT_LINE_BELOW]: () => {},
+    [INSERT_LINE_ABOVE]: () => {},
+    [PLACE_CARET_AT_LINE_START]: () => {},
   },
   guards: {
     keyIs: ({ event }, params: { key: string }) => event.key === params.key,
@@ -74,6 +80,22 @@ export const vimMachine = setup({
             guard: { type: "keyIs", params: { key: "I" } },
             target: "insert",
             actions: { type: PLACE_CARET_AT_FIRST_NON_BLANK },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "o" } },
+            target: "insert",
+            actions: [
+              { type: INSERT_LINE_BELOW },
+              { type: PLACE_CARET_AT_LINE_START },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "O" } },
+            target: "insert",
+            actions: [
+              { type: INSERT_LINE_ABOVE },
+              { type: PLACE_CARET_AT_LINE_START },
+            ],
           },
           {
             guard: { type: "keyIs", params: { key: "h" } },
