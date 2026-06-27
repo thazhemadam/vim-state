@@ -77,10 +77,7 @@ test("Pi extension installs a Vim editor", () => {
 });
 
 test("VimPiEditor delegates insert input and ignores normal printable keys", () => {
-  const fakeTui = { terminal: { rows: 24 }, requestRender: () => {} };
-  const fakeTheme = { borderColor: (value: string) => value, selectList: {} };
-  const fakeKeybindings = { matches: () => false };
-  const editor = new VimPiEditor(fakeTui as never, fakeTheme as never, fakeKeybindings as never);
+  const editor = createEditor();
 
   for (const key of ["a", "b", "c", "\x1b", "x", "y", "z", "i", "X"])
     editor.handleInput(key);
@@ -90,3 +87,26 @@ test("VimPiEditor delegates insert input and ignores normal printable keys", () 
   assert.equal(getVimMode(editor.getVimSnapshot()), "insert");
   assert.match(editor.render(40).at(-1) ?? "", /-- INSERT --$/);
 });
+
+test("VimPiEditor renders insert as caret and normal as block cursor", () => {
+  const editor = createEditor();
+
+  for (const key of ["a", "b", "c"]) editor.handleInput(key);
+  assert.match(editor.render(40).join("\n"), /abc│/);
+
+  editor.handleInput("\x1b");
+  const normalRender = editor.render(40).join("\n");
+  assert.match(normalRender, /\x1b\[7mc\x1b\[0m/);
+  assert.doesNotMatch(normalRender, /│/);
+});
+
+function createEditor(): VimPiEditor {
+  const fakeTui = { terminal: { rows: 24 }, requestRender: () => {} };
+  const fakeTheme = { borderColor: (value: string) => value, selectList: {} };
+  const fakeKeybindings = { matches: () => false };
+  return new VimPiEditor(
+    fakeTui as never,
+    fakeTheme as never,
+    fakeKeybindings as never,
+  );
+}
