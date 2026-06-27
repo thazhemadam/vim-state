@@ -31,6 +31,8 @@ export const vimMachine = setup({
       context.editor.deleteCharUnderCursor(),
     deleteCharBeforeCursor: ({ context }) =>
       context.editor.deleteCharBeforeCursor(),
+    replaceCharUnderCursor: ({ context }, params: { char: string }) =>
+      context.editor.replaceCharUnderCursor(params.char),
     clampCursorColumn: ({ context }) => context.editor.clampCursorColumn(),
   },
   guards: {
@@ -67,6 +69,25 @@ export const vimMachine = setup({
         ],
       },
     },
+    "replace-once": {
+      on: {
+        KEY: [
+          {
+            guard: { type: "keyIs", params: { key: "escape" } },
+            target: "normal",
+          },
+          {
+            guard: { type: "keyIsPrintable" },
+            target: "normal",
+            actions: {
+              type: "replaceCharUnderCursor",
+              params: ({ event }) => ({ char: event.key }),
+            },
+          },
+          { target: "normal" },
+        ],
+      },
+    },
     normal: {
       on: {
         KEY: [
@@ -92,6 +113,10 @@ export const vimMachine = setup({
           {
             guard: { type: "keyIs", params: { key: "R" } },
             target: "replace",
+          },
+          {
+            guard: { type: "keyIs", params: { key: "r" } },
+            target: "replace-once",
           },
           {
             guard: { type: "keyIs", params: { key: "o" } },

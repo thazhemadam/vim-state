@@ -131,6 +131,21 @@ test("Vim core enters Replace mode and deletes under printable keys", () => {
   assert.deepEqual(calls, ["moveCursorLeft"]);
 });
 
+test("Vim core applies Normal-mode r as one-shot replace", () => {
+  const calls: string[] = [];
+  const actor = createVimCore(calls);
+  actor.send({ type: "KEY", key: "escape" });
+  calls.length = 0;
+
+  actor.send({ type: "KEY", key: "r" });
+  assert.equal(getVimMode(actor.getSnapshot()), "normal");
+  assert.deepEqual(calls, []);
+
+  actor.send({ type: "KEY", key: "X" });
+  assert.equal(getVimMode(actor.getSnapshot()), "normal");
+  assert.deepEqual(calls, ["replaceCharUnderCursor:X"]);
+});
+
 test("Pi keymap normalizes raw input into Vim keys", () => {
   assert.equal(normalizePiKey("\x1b"), "escape");
   assert.equal(normalizePiKey("i"), "i");
@@ -293,6 +308,16 @@ test("VimPiEditor applies Normal-mode R replace entry", () => {
   editor.handleInput("\x1b");
   assert.equal(getVimMode(editor.vimSnapshot), "normal");
   assert.deepEqual(editor.getCursor(), { line: 0, col: 1 });
+});
+
+test("VimPiEditor applies Normal-mode r one-shot replace", () => {
+  const editor = createEditor();
+  for (const key of ["a", "b", "c", "\x1b", "0", "l", "r", "X"])
+    editor.handleInput(key);
+
+  assert.equal(editor.getText(), "aXc");
+  assert.deepEqual(editor.getCursor(), { line: 0, col: 1 });
+  assert.equal(getVimMode(editor.vimSnapshot), "normal");
 });
 
 test("VimPiEditor delegates insert input and ignores unmapped normal printable keys", () => {
