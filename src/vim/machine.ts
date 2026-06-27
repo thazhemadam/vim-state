@@ -13,6 +13,7 @@ import {
   PLACE_CARET_AFTER_CURSOR,
   PLACE_CARET_AT_LINE_END,
   PLACE_CARET_AT_LINE_START,
+  VIM_ACTION_TYPES,
 } from "./actions.js";
 import { initialVimContext, type VimContext } from "./context.js";
 import type { VimEvent } from "./events.js";
@@ -23,20 +24,9 @@ export const vimMachine = setup({
     context: {} as VimContext,
     events: {} as VimEvent,
   },
-  actions: {
-    [PLACE_CARET_AFTER_CURSOR]: () => {},
-    [PLACE_CARET_AT_LINE_END]: () => {},
-    [MOVE_CURSOR_LEFT]: () => {},
-    [MOVE_CURSOR_DOWN]: () => {},
-    [MOVE_CURSOR_UP]: () => {},
-    [MOVE_CURSOR_RIGHT]: () => {},
-    [MOVE_CURSOR_TO_LINE_START]: () => {},
-    [MOVE_CURSOR_TO_LINE_END]: () => {},
-    [MOVE_CURSOR_TO_FIRST_NON_BLANK]: () => {},
-    [INSERT_LINE_BELOW]: () => {},
-    [INSERT_LINE_ABOVE]: () => {},
-    [PLACE_CARET_AT_LINE_START]: () => {},
-  },
+  actions: Object.fromEntries(
+    VIM_ACTION_TYPES.map((type) => [type, () => {}] as const),
+  ),
   guards: {
     keyIs: ({ event }, params: { key: string }) => event.key === params.key,
   },
