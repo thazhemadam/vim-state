@@ -241,16 +241,50 @@ test("VimPiEditor applies Normal-mode o O open-line insert entry", () => {
   assert.equal(getVimMode(aboveEditor.getVimSnapshot()), "insert");
 });
 
-test("VimPiEditor delegates insert input and ignores normal printable keys", () => {
+test("VimPiEditor delegates insert input and ignores unmapped normal printable keys", () => {
   const editor = createEditor();
 
-  for (const key of ["a", "b", "c", "\x1b", "x", "y", "z", "i", "X"])
+  for (const key of ["a", "b", "c", "\x1b", "q", "y", "z", "i", "X"])
     editor.handleInput(key);
 
   assert.equal(editor.getText(), "abXc");
   assert.deepEqual(editor.getCursor(), { line: 0, col: 3 });
   assert.equal(getVimMode(editor.getVimSnapshot()), "insert");
   assert.match(editor.render(40).at(-1) ?? "", /-- INSERT --$/);
+});
+
+test("VimPiEditor applies Normal-mode x X character deletion", () => {
+  const deleteUnderEditor = createEditor();
+  for (const key of ["a", "b", "c", "\x1b", "h", "x"])
+    deleteUnderEditor.handleInput(key);
+  assert.equal(deleteUnderEditor.getText(), "ac");
+  assert.deepEqual(deleteUnderEditor.getCursor(), { line: 0, col: 1 });
+
+  const deleteLastEditor = createEditor();
+  for (const key of ["a", "b", "c", "\x1b", "x"])
+    deleteLastEditor.handleInput(key);
+  assert.equal(deleteLastEditor.getText(), "ab");
+  assert.deepEqual(deleteLastEditor.getCursor(), { line: 0, col: 1 });
+
+  const deleteBeforeEditor = createEditor();
+  for (const key of ["a", "b", "c", "\x1b", "X"])
+    deleteBeforeEditor.handleInput(key);
+  assert.equal(deleteBeforeEditor.getText(), "ac");
+  assert.deepEqual(deleteBeforeEditor.getCursor(), { line: 0, col: 1 });
+
+  const lineStartEditor = createEditor();
+  for (const key of ["a", "b", "c", "\x1b", "0", "X"])
+    lineStartEditor.handleInput(key);
+  assert.equal(lineStartEditor.getText(), "abc");
+  assert.deepEqual(lineStartEditor.getCursor(), { line: 0, col: 0 });
+
+  const emptyLineEditor = createEditor();
+  emptyLineEditor.setText("");
+  emptyLineEditor.handleInput("\x1b");
+  emptyLineEditor.handleInput("x");
+  emptyLineEditor.handleInput("X");
+  assert.equal(emptyLineEditor.getText(), "");
+  assert.deepEqual(emptyLineEditor.getCursor(), { line: 0, col: 0 });
 });
 
 test("VimPiEditor uses hardware bar cursor in insert and fake block cursor in normal", () => {

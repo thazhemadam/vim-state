@@ -48,13 +48,13 @@ export class VimPiEditor extends CustomEditor implements VimActionHandler {
   /** Move down, then clamp because Vim Normal mode cannot rest past the last character. */
   moveCursorDown(): void {
     super.handleInput("\x1b[B");
-    this.clampNormalCursorColumn();
+    this.clampCursorColumn();
   }
 
   /** Move up, then clamp because target lines may be shorter than the source line. */
   moveCursorUp(): void {
     super.handleInput("\x1b[A");
-    this.clampNormalCursorColumn();
+    this.clampCursorColumn();
   }
 
   /** Move right only while another character exists under the Normal-mode cursor. */
@@ -72,7 +72,7 @@ export class VimPiEditor extends CustomEditor implements VimActionHandler {
   /** Move to the last Normal-mode character on the current line. */
   moveCursorToLineEnd(): void {
     super.handleInput("\x05");
-    this.clampNormalCursorColumn();
+    this.clampCursorColumn();
   }
 
   /** Move to the first non-blank character on the current line. */
@@ -109,6 +109,34 @@ export class VimPiEditor extends CustomEditor implements VimActionHandler {
   /** Place the Insert caret at the end of the current line. */
   placeCaretAtLineEnd(): void {
     super.handleInput("\x05");
+  }
+
+  /** Delete the Normal-mode character under the cursor without crossing lines. */
+  deleteCharUnderCursor(): void {
+    const { line, col } = this.getCursor();
+    if (col < (this.getLines()[line] ?? "").length)
+      super.handleInput("\x1b[3~");
+  }
+
+  /** Delete the character before the Normal-mode cursor without crossing lines. */
+  deleteCharBeforeCursor(): void {
+    const { line, col } = this.getCursor();
+    if (col === 0) return;
+
+    super.handleInput("\x7f");
+
+    const targetCol = Math.min(col, (this.getLines()[line] ?? "").length);
+    while (this.getCursor().col < targetCol) super.handleInput("\x1b[C");
+  }
+
+  /** Move left until the Normal-mode cursor sits on a character, or column 0 for an empty line. */
+  clampCursorColumn(): void {
+    while (
+      this.getCursor().col >
+      normalMaxColumn(this.getLines()[this.getCursor().line] ?? "")
+    ) {
+      super.handleInput("\x1b[D");
+    }
   }
 
   handleInput(data: string): void {
@@ -179,16 +207,6 @@ export class VimPiEditor extends CustomEditor implements VimActionHandler {
   private moveCaretToColumn(column: number): void {
     super.handleInput("\x01");
     for (let i = 0; i < column; i += 1) super.handleInput("\x1b[C");
-  }
-
-  /** Reuse Pi left-arrow handling until the caret is back on a valid Normal-mode character. */
-  private clampNormalCursorColumn(): void {
-    while (
-      this.getCursor().col >
-      normalMaxColumn(this.getLines()[this.getCursor().line] ?? "")
-    ) {
-      super.handleInput("\x1b[D");
-    }
   }
 }
 
