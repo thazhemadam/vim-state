@@ -161,13 +161,19 @@ test("VimPiEditor applies Normal-mode hjkl navigation", () => {
   assert.deepEqual(firstNonBlankEditor.getCursor(), { line: 0, col: 2 });
 
   const verticalEditor = createEditor();
-  verticalEditor.setText("ab\ncd");
+  verticalEditor.setText("hello\nworld");
   verticalEditor.handleInput("\x1b");
-  assert.deepEqual(verticalEditor.getCursor(), { line: 1, col: 1 });
+  verticalEditor.handleInput("0");
+  for (const key of ["l", "l", "l"]) verticalEditor.handleInput(key);
+  assert.deepEqual(verticalEditor.getCursor(), { line: 1, col: 3 });
   verticalEditor.handleInput("k");
-  assert.deepEqual(verticalEditor.getCursor(), { line: 0, col: 1 });
+  assert.deepEqual(verticalEditor.getCursor(), { line: 0, col: 3 });
+  verticalEditor.handleInput("k");
+  assert.deepEqual(verticalEditor.getCursor(), { line: 0, col: 3 });
   verticalEditor.handleInput("j");
-  assert.deepEqual(verticalEditor.getCursor(), { line: 1, col: 1 });
+  assert.deepEqual(verticalEditor.getCursor(), { line: 1, col: 3 });
+  verticalEditor.handleInput("j");
+  assert.deepEqual(verticalEditor.getCursor(), { line: 1, col: 3 });
 
   const shortLineEditor = createEditor();
   shortLineEditor.setText("x\nhello");

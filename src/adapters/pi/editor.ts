@@ -47,12 +47,14 @@ export class VimPiEditor extends CustomEditor implements VimActionHandler {
 
   /** Move down, then clamp because Vim Normal mode cannot rest past the last character. */
   moveCursorDown(): void {
+    if (this.getCursor().line >= this.getLines().length - 1) return;
     super.handleInput("\x1b[B");
     this.clampCursorColumn();
   }
 
   /** Move up, then clamp because target lines may be shorter than the source line. */
   moveCursorUp(): void {
+    if (this.getCursor().line === 0) return;
     super.handleInput("\x1b[A");
     this.clampCursorColumn();
   }
