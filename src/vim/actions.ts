@@ -37,6 +37,30 @@ export type VimAction =
   | { type: typeof INSERT_LINE_ABOVE }
   | { type: typeof PLACE_CARET_AT_LINE_START };
 
+export interface VimActionHandler {
+  placeCursorOnPreviousCharacter(): void;
+  placeCaretBeforeCursor(): void;
+  placeCaretAfterCursor(): void;
+  placeCaretAtLineEnd(): void;
+  moveCursorLeft(): void;
+  moveCursorDown(): void;
+  moveCursorUp(): void;
+  moveCursorRight(): void;
+  moveCursorToLineStart(): void;
+  moveCursorToLineEnd(): void;
+  moveCursorToFirstNonBlank(): void;
+  insertLineBelow(): void;
+  insertLineAbove(): void;
+  placeCaretAtLineStart(): void;
+}
+
+export function applyVimAction(
+  action: VimAction,
+  handler: VimActionHandler,
+): void {
+  handler[action.type]();
+}
+
 export function toVimAction(type: string): VimAction | undefined {
   switch (type) {
     case PLACE_CURSOR_ON_PREVIOUS_CHARACTER:
