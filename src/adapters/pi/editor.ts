@@ -111,11 +111,6 @@ export class VimPiEditor extends CustomEditor {
     super.handleInput("\x05");
   }
 
-  /** Place the Insert caret before the first non-blank character on the current line. */
-  placeCaretAtFirstNonBlank(): void {
-    this.moveCaretToFirstNonBlank();
-  }
-
   handleInput(data: string): void {
     const wasInsert = getVimMode(this.snapshot) === "insert";
     const result = transitionVim(this.snapshot, piInputToVimEvent(data));

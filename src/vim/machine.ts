@@ -11,7 +11,6 @@ import {
   MOVE_CURSOR_TO_LINE_START,
   MOVE_CURSOR_UP,
   PLACE_CARET_AFTER_CURSOR,
-  PLACE_CARET_AT_FIRST_NON_BLANK,
   PLACE_CARET_AT_LINE_END,
   PLACE_CARET_AT_LINE_START,
   PLACE_CARET_BEFORE_CURSOR,
@@ -31,7 +30,6 @@ export const vimMachine = setup({
     [PLACE_CARET_BEFORE_CURSOR]: () => {},
     [PLACE_CARET_AFTER_CURSOR]: () => {},
     [PLACE_CARET_AT_LINE_END]: () => {},
-    [PLACE_CARET_AT_FIRST_NON_BLANK]: () => {},
     [MOVE_CURSOR_LEFT]: () => {},
     [MOVE_CURSOR_DOWN]: () => {},
     [MOVE_CURSOR_UP]: () => {},
@@ -81,7 +79,7 @@ export const vimMachine = setup({
           {
             guard: { type: "keyIs", params: { key: "I" } },
             target: "insert",
-            actions: { type: PLACE_CARET_AT_FIRST_NON_BLANK },
+            actions: { type: MOVE_CURSOR_TO_FIRST_NON_BLANK },
           },
           {
             guard: { type: "keyIs", params: { key: "o" } },

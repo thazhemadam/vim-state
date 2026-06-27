@@ -38,7 +38,7 @@ test("Vim core emits Normal-mode insert-entry actions", () => {
   for (const [key, actions] of [
     ["a", [{ type: "placeCaretAfterCursor" }]],
     ["A", [{ type: "placeCaretAtLineEnd" }]],
-    ["I", [{ type: "placeCaretAtFirstNonBlank" }]],
+    ["I", [{ type: "moveCursorToFirstNonBlank" }]],
     ["o", [{ type: "insertLineBelow" }, { type: "placeCaretAtLineStart" }]],
     ["O", [{ type: "insertLineAbove" }, { type: "placeCaretAtLineStart" }]],
   ] as const) {
@@ -107,9 +107,6 @@ test("Pi cursor actions apply initial Vim cursor rules", () => {
     placeCaretAtLineEnd: () => {
       col = 4;
     },
-    placeCaretAtFirstNonBlank: () => {
-      col = 2;
-    },
   });
 
   let target = cursorTarget(0);
@@ -140,8 +137,6 @@ test("Pi cursor actions apply initial Vim cursor rules", () => {
   assert.equal(target.getCursor().col, 1);
   applyVimActionToPiEditor({ type: "placeCaretAtLineEnd" }, target);
   assert.equal(target.getCursor().col, 4);
-  applyVimActionToPiEditor({ type: "placeCaretAtFirstNonBlank" }, target);
-  assert.equal(target.getCursor().col, 2);
 });
 
 test("Pi extension installs a Vim editor", () => {
