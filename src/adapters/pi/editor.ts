@@ -91,6 +91,18 @@ export class VimPiEditor extends CustomEditor implements VimEditor {
     this.moveCaretToColumn(firstNonBlankColumn(this.currentLine));
   }
 
+  /**
+   * Move to the start of the next word-like run.
+   *
+   * This implements the initial `w` subset: skip the current word/punctuation
+   * run, skip whitespace, then land on the next word or punctuation run. A run
+   * is a contiguous sequence of characters with the same `charType()`.
+   */
+  moveCursorToNextWord(): void {
+    const target = nextWordPosition(this.getLines(), this.cursor);
+    this.moveCursorToPosition(target);
+  }
+
   /** Insert an empty line below the current line and leave the caret on it. */
   insertLineBelow(): void {
     super.handleInput(LINE_END);
@@ -232,6 +244,13 @@ export class VimPiEditor extends CustomEditor implements VimEditor {
     this.tui.terminal.write(style === "bar" ? "\x1b[6 q" : "\x1b[2 q");
   }
 
+  /** Move to a zero-based position using Pi editor cursor primitives. */
+  private moveCursorToPosition(position: { line: number; col: number }): void {
+    while (this.cursor.line < position.line) super.handleInput(ARROW_DOWN);
+    while (this.cursor.line > position.line) super.handleInput(ARROW_UP);
+    this.moveCaretToColumn(position.col);
+  }
+
   /** Move to a zero-based column using Pi editor cursor primitives. */
   private moveCaretToColumn(column: number): void {
     super.handleInput(LINE_START);
@@ -248,6 +267,48 @@ function normalMaxColumn(line: string): number {
 function firstNonBlankColumn(line: string): number {
   const match = /\S/.exec(line);
   return match?.index ?? 0;
+}
+
+/**
+ * Return the next Normal-mode `w` target.
+ *
+ * Deliberately small Vim subset:
+ * - a run is a contiguous sequence of characters with the same `charType()`
+ * - word chars are ASCII letters, digits, and `_`
+ * - punctuation is any other non-whitespace run
+ * - whitespace is skipped after leaving the current run
+ * - scanning continues onto following lines
+ * - if no next run exists, clamp to the final Normal-mode cursor position
+ */
+function nextWordPosition(
+  lines: string[],
+  cursor: { line: number; col: number },
+): { line: number; col: number } {
+  for (let lineIndex = cursor.line; lineIndex < lines.length; lineIndex += 1) {
+    const line = lines[lineIndex] ?? "";
+    let col = lineIndex === cursor.line ? cursor.col : 0;
+
+    if (col < line.length && !isWhitespace(line[col]!)) {
+      const type = charType(line[col]!);
+      while (col < line.length && charType(line[col]!) === type) col += 1;
+    }
+    while (col < line.length && isWhitespace(line[col]!)) col += 1;
+
+    if (col < line.length) return { line: lineIndex, col };
+  }
+
+  const lastLine = Math.max(lines.length - 1, 0);
+  return { line: lastLine, col: normalMaxColumn(lines[lastLine] ?? "") };
+}
+
+/** Classify characters for the initial word-motion subset. */
+function charType(char: string): "word" | "punct" | "space" {
+  if (isWhitespace(char)) return "space";
+  return /[A-Za-z0-9_]/.test(char) ? "word" : "punct";
+}
+
+function isWhitespace(char: string): boolean {
+  return /\s/.test(char);
 }
 
 const REVERSE_VIDEO_CURSOR = /\x1b\[7m([^\x1b]*)\x1b\[0m/;
