@@ -35,6 +35,8 @@ export const vimMachine = setup({
   },
   guards: {
     keyIs: ({ event }, params: { key: string }) => event.key === params.key,
+    keyIsPrintable: ({ event }) =>
+      Array.from(event.key).length === 1 && event.key >= " ",
   },
 }).createMachine({
   id: "vim-pi",
@@ -48,6 +50,21 @@ export const vimMachine = setup({
           target: "normal",
           actions: { type: "moveCursorLeft" },
         },
+      },
+    },
+    replace: {
+      on: {
+        KEY: [
+          {
+            guard: { type: "keyIs", params: { key: "escape" } },
+            target: "normal",
+            actions: { type: "moveCursorLeft" },
+          },
+          {
+            guard: { type: "keyIsPrintable" },
+            actions: { type: "deleteCharUnderCursor" },
+          },
+        ],
       },
     },
     normal: {
@@ -71,6 +88,10 @@ export const vimMachine = setup({
             guard: { type: "keyIs", params: { key: "I" } },
             target: "insert",
             actions: { type: "moveCursorToFirstNonBlank" },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "R" } },
+            target: "replace",
           },
           {
             guard: { type: "keyIs", params: { key: "o" } },

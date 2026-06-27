@@ -110,6 +110,25 @@ test("Vim core calls Normal-mode character deletion editor methods", () => {
   assert.deepEqual(calls, ["deleteCharBeforeCursor", "moveCursorLeft"]);
 });
 
+test("Vim core enters Replace mode and deletes under printable keys", () => {
+  const calls: string[] = [];
+  const actor = createVimCore(calls);
+  actor.send({ type: "KEY", key: "escape" });
+  actor.send({ type: "KEY", key: "R" });
+  assert.equal(getVimMode(actor.getSnapshot()), "replace");
+  assert.deepEqual(calls, ["moveCursorLeft"]);
+
+  calls.length = 0;
+  actor.send({ type: "KEY", key: "X" });
+  assert.equal(getVimMode(actor.getSnapshot()), "replace");
+  assert.deepEqual(calls, ["deleteCharUnderCursor"]);
+
+  calls.length = 0;
+  actor.send({ type: "KEY", key: "escape" });
+  assert.equal(getVimMode(actor.getSnapshot()), "normal");
+  assert.deepEqual(calls, ["moveCursorLeft"]);
+});
+
 test("Pi keymap normalizes raw input into Vim keys", () => {
   assert.equal(normalizePiKey("\x1b"), "escape");
   assert.equal(normalizePiKey("i"), "i");

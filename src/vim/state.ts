@@ -4,6 +4,6 @@
  * Keep this aligned with `vimMachine` state node names and Vim's observable
  * `mode()` values where practical.
  */
-export type VimMode = "insert" | "normal";
+export type VimMode = "insert" | "normal" | "replace";
 
 export const initialVimMode: VimMode = "insert";
