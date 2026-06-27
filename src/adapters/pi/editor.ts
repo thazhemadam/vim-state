@@ -75,6 +75,24 @@ export class VimPiEditor extends CustomEditor {
     this.clampNormalCursorColumn();
   }
 
+  /** Insert an empty line below the current line and leave the caret on it. */
+  insertLineBelow(): void {
+    super.handleInput("\x05");
+    super.handleInput("\n");
+  }
+
+  /** Insert an empty line above the current line and leave the caret on it. */
+  insertLineAbove(): void {
+    super.handleInput("\x01");
+    super.handleInput("\n");
+    super.handleInput("\x1b[A");
+  }
+
+  /** Place the Insert caret at the start of the current line. */
+  placeCaretAtLineStart(): void {
+    super.handleInput("\x01");
+  }
+
   /** Place the Insert caret after the current Normal-mode character. */
   placeCaretAfterCursor(): void {
     const { line, col } = this.getCursor();

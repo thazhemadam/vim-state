@@ -91,6 +91,11 @@ test("Pi cursor actions apply initial Vim cursor rules", () => {
     moveCaretToLineEnd: () => {
       col = 4;
     },
+    insertLineBelow: () => {},
+    insertLineAbove: () => {},
+    placeCaretAtLineStart: () => {
+      col = 0;
+    },
     placeCaretAfterCursor: () => {
       col += 1;
     },
@@ -120,6 +125,8 @@ test("Pi cursor actions apply initial Vim cursor rules", () => {
   applyVimActionToPiEditor({ type: "moveCursorToLineEnd" }, target);
   assert.equal(target.getCursor().col, 4);
   applyVimActionToPiEditor({ type: "moveCursorToLineStart" }, target);
+  assert.equal(target.getCursor().col, 0);
+  applyVimActionToPiEditor({ type: "placeCaretAtLineStart" }, target);
   assert.equal(target.getCursor().col, 0);
 
   applyVimActionToPiEditor({ type: "placeCaretAfterCursor" }, target);
@@ -225,6 +232,22 @@ test("VimPiEditor applies Normal-mode a A I insert entry", () => {
   firstNonBlankEditor.handleInput("X");
   assert.equal(firstNonBlankEditor.getText(), "  Xabc");
   assert.deepEqual(firstNonBlankEditor.getCursor(), { line: 0, col: 3 });
+});
+
+test("VimPiEditor applies Normal-mode o O open-line insert entry", () => {
+  const belowEditor = createEditor();
+  for (const key of ["a", "b", "c", "\x1b", "o", "X"])
+    belowEditor.handleInput(key);
+  assert.equal(belowEditor.getText(), "abc\nX");
+  assert.deepEqual(belowEditor.getCursor(), { line: 1, col: 1 });
+  assert.equal(getVimMode(belowEditor.getVimSnapshot()), "insert");
+
+  const aboveEditor = createEditor();
+  for (const key of ["a", "b", "c", "\x1b", "O", "X"])
+    aboveEditor.handleInput(key);
+  assert.equal(aboveEditor.getText(), "X\nabc");
+  assert.deepEqual(aboveEditor.getCursor(), { line: 0, col: 1 });
+  assert.equal(getVimMode(aboveEditor.getVimSnapshot()), "insert");
 });
 
 test("VimPiEditor delegates insert input and ignores normal printable keys", () => {
