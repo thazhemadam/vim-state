@@ -17,6 +17,8 @@ export const MOVE_CURSOR_UP = "moveCursorUp" as const;
 export const MOVE_CURSOR_RIGHT = "moveCursorRight" as const;
 export const MOVE_CURSOR_TO_LINE_START = "moveCursorToLineStart" as const;
 export const MOVE_CURSOR_TO_LINE_END = "moveCursorToLineEnd" as const;
+export const MOVE_CURSOR_TO_FIRST_NON_BLANK =
+  "moveCursorToFirstNonBlank" as const;
 export const INSERT_LINE_BELOW = "insertLineBelow" as const;
 export const INSERT_LINE_ABOVE = "insertLineAbove" as const;
 export const PLACE_CARET_AT_LINE_START = "placeCaretAtLineStart" as const;
@@ -33,6 +35,7 @@ export type VimAction =
   | { type: typeof MOVE_CURSOR_RIGHT }
   | { type: typeof MOVE_CURSOR_TO_LINE_START }
   | { type: typeof MOVE_CURSOR_TO_LINE_END }
+  | { type: typeof MOVE_CURSOR_TO_FIRST_NON_BLANK }
   | { type: typeof INSERT_LINE_BELOW }
   | { type: typeof INSERT_LINE_ABOVE }
   | { type: typeof PLACE_CARET_AT_LINE_START };
@@ -61,6 +64,8 @@ export function toVimAction(type: string): VimAction | undefined {
       return { type: MOVE_CURSOR_TO_LINE_START };
     case MOVE_CURSOR_TO_LINE_END:
       return { type: MOVE_CURSOR_TO_LINE_END };
+    case MOVE_CURSOR_TO_FIRST_NON_BLANK:
+      return { type: MOVE_CURSOR_TO_FIRST_NON_BLANK };
     case INSERT_LINE_BELOW:
       return { type: INSERT_LINE_BELOW };
     case INSERT_LINE_ABOVE:

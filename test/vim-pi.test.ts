@@ -61,6 +61,7 @@ test("Vim core emits Normal-mode cursor actions", () => {
     ["l", "moveCursorRight"],
     ["0", "moveCursorToLineStart"],
     ["$", "moveCursorToLineEnd"],
+    ["^", "moveCursorToFirstNonBlank"],
   ] as const) {
     result = transitionVim(result.snapshot, { type: "KEY", key });
     assert.equal(getVimMode(result.snapshot), "normal");

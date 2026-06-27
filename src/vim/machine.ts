@@ -6,6 +6,7 @@ import {
   MOVE_CURSOR_RIGHT,
   INSERT_LINE_ABOVE,
   INSERT_LINE_BELOW,
+  MOVE_CURSOR_TO_FIRST_NON_BLANK,
   MOVE_CURSOR_TO_LINE_END,
   MOVE_CURSOR_TO_LINE_START,
   MOVE_CURSOR_UP,
@@ -37,6 +38,7 @@ export const vimMachine = setup({
     [MOVE_CURSOR_RIGHT]: () => {},
     [MOVE_CURSOR_TO_LINE_START]: () => {},
     [MOVE_CURSOR_TO_LINE_END]: () => {},
+    [MOVE_CURSOR_TO_FIRST_NON_BLANK]: () => {},
     [INSERT_LINE_BELOW]: () => {},
     [INSERT_LINE_ABOVE]: () => {},
     [PLACE_CARET_AT_LINE_START]: () => {},
@@ -120,6 +122,10 @@ export const vimMachine = setup({
           {
             guard: { type: "keyIs", params: { key: "$" } },
             actions: { type: MOVE_CURSOR_TO_LINE_END },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "^" } },
+            actions: { type: MOVE_CURSOR_TO_FIRST_NON_BLANK },
           },
         ],
       },
