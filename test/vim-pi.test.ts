@@ -93,6 +93,9 @@ test("Pi cursor actions apply initial Vim cursor rules", () => {
     moveCaretToLineEnd: () => {
       col = 4;
     },
+    moveCaretToFirstNonBlank: () => {
+      col = 2;
+    },
     insertLineBelow: () => {},
     insertLineAbove: () => {},
     placeCaretAtLineStart: () => {
@@ -128,6 +131,8 @@ test("Pi cursor actions apply initial Vim cursor rules", () => {
   assert.equal(target.getCursor().col, 4);
   applyVimActionToPiEditor({ type: "moveCursorToLineStart" }, target);
   assert.equal(target.getCursor().col, 0);
+  applyVimActionToPiEditor({ type: "moveCursorToFirstNonBlank" }, target);
+  assert.equal(target.getCursor().col, 2);
   applyVimActionToPiEditor({ type: "placeCaretAtLineStart" }, target);
   assert.equal(target.getCursor().col, 0);
 

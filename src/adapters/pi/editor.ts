@@ -75,6 +75,13 @@ export class VimPiEditor extends CustomEditor {
     this.clampNormalCursorColumn();
   }
 
+  /** Move to the first non-blank character on the current line. */
+  moveCaretToFirstNonBlank(): void {
+    this.moveCaretToColumn(
+      firstNonBlankColumn(this.getLines()[this.getCursor().line] ?? ""),
+    );
+  }
+
   /** Insert an empty line below the current line and leave the caret on it. */
   insertLineBelow(): void {
     super.handleInput("\x05");
@@ -106,10 +113,7 @@ export class VimPiEditor extends CustomEditor {
 
   /** Place the Insert caret before the first non-blank character on the current line. */
   placeCaretAtFirstNonBlank(): void {
-    const { line } = this.getCursor();
-    const column = firstNonBlankColumn(this.getLines()[line] ?? "");
-    super.handleInput("\x01");
-    for (let i = 0; i < column; i += 1) super.handleInput("\x1b[C");
+    this.moveCaretToFirstNonBlank();
   }
 
   handleInput(data: string): void {
@@ -174,6 +178,12 @@ export class VimPiEditor extends CustomEditor {
     }
     this.cursorStyle = style;
     this.tui.terminal.write(style === "bar" ? "\x1b[6 q" : "\x1b[2 q");
+  }
+
+  /** Move to a zero-based column using Pi editor cursor primitives. */
+  private moveCaretToColumn(column: number): void {
+    super.handleInput("\x01");
+    for (let i = 0; i < column; i += 1) super.handleInput("\x1b[C");
   }
 
   /** Reuse Pi left-arrow handling until the caret is back on a valid Normal-mode character. */
