@@ -13,8 +13,6 @@ import {
   PLACE_CARET_AFTER_CURSOR,
   PLACE_CARET_AT_LINE_END,
   PLACE_CARET_AT_LINE_START,
-  PLACE_CARET_BEFORE_CURSOR,
-  PLACE_CURSOR_ON_PREVIOUS_CHARACTER,
 } from "./actions.js";
 import { initialVimContext, type VimContext } from "./context.js";
 import type { VimEvent } from "./events.js";
@@ -26,8 +24,6 @@ export const vimMachine = setup({
     events: {} as VimEvent,
   },
   actions: {
-    [PLACE_CURSOR_ON_PREVIOUS_CHARACTER]: () => {},
-    [PLACE_CARET_BEFORE_CURSOR]: () => {},
     [PLACE_CARET_AFTER_CURSOR]: () => {},
     [PLACE_CARET_AT_LINE_END]: () => {},
     [MOVE_CURSOR_LEFT]: () => {},
@@ -54,7 +50,7 @@ export const vimMachine = setup({
         KEY: {
           guard: { type: "keyIs", params: { key: "escape" } },
           target: "normal",
-          actions: { type: PLACE_CURSOR_ON_PREVIOUS_CHARACTER },
+          actions: { type: MOVE_CURSOR_LEFT },
         },
       },
     },
@@ -64,7 +60,6 @@ export const vimMachine = setup({
           {
             guard: { type: "keyIs", params: { key: "i" } },
             target: "insert",
-            actions: { type: PLACE_CARET_BEFORE_CURSOR },
           },
           {
             guard: { type: "keyIs", params: { key: "a" } },

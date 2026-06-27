@@ -4,9 +4,6 @@
  * Adapters translate these intent-level actions into concrete editor mutations.
  * The reusable Vim core must not import Pi or any other host editor API.
  */
-export const PLACE_CURSOR_ON_PREVIOUS_CHARACTER =
-  "placeCursorOnPreviousCharacter" as const;
-export const PLACE_CARET_BEFORE_CURSOR = "placeCaretBeforeCursor" as const;
 export const PLACE_CARET_AFTER_CURSOR = "placeCaretAfterCursor" as const;
 export const PLACE_CARET_AT_LINE_END = "placeCaretAtLineEnd" as const;
 export const MOVE_CURSOR_LEFT = "moveCursorLeft" as const;
@@ -22,8 +19,6 @@ export const INSERT_LINE_ABOVE = "insertLineAbove" as const;
 export const PLACE_CARET_AT_LINE_START = "placeCaretAtLineStart" as const;
 
 export type VimAction =
-  | { type: typeof PLACE_CURSOR_ON_PREVIOUS_CHARACTER }
-  | { type: typeof PLACE_CARET_BEFORE_CURSOR }
   | { type: typeof PLACE_CARET_AFTER_CURSOR }
   | { type: typeof PLACE_CARET_AT_LINE_END }
   | { type: typeof MOVE_CURSOR_LEFT }
@@ -38,8 +33,6 @@ export type VimAction =
   | { type: typeof PLACE_CARET_AT_LINE_START };
 
 export interface VimActionHandler {
-  placeCursorOnPreviousCharacter(): void;
-  placeCaretBeforeCursor(): void;
   placeCaretAfterCursor(): void;
   placeCaretAtLineEnd(): void;
   moveCursorLeft(): void;
@@ -63,10 +56,6 @@ export function applyVimAction(
 
 export function toVimAction(type: string): VimAction | undefined {
   switch (type) {
-    case PLACE_CURSOR_ON_PREVIOUS_CHARACTER:
-      return { type: PLACE_CURSOR_ON_PREVIOUS_CHARACTER };
-    case PLACE_CARET_BEFORE_CURSOR:
-      return { type: PLACE_CARET_BEFORE_CURSOR };
     case PLACE_CARET_AFTER_CURSOR:
       return { type: PLACE_CARET_AFTER_CURSOR };
     case PLACE_CARET_AT_LINE_END:

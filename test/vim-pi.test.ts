@@ -20,9 +20,7 @@ test("Vim core switches between insert and normal", () => {
 
   result = transitionVim(result.snapshot, { type: "KEY", key: "escape" });
   assert.equal(getVimMode(result.snapshot), "normal");
-  assert.deepEqual(result.actions, [
-    { type: "placeCursorOnPreviousCharacter" },
-  ]);
+  assert.deepEqual(result.actions, [{ type: "moveCursorLeft" }]);
 
   const snapshotBeforeNoop: VimSnapshot = result.snapshot;
   result = transitionVim(result.snapshot, { type: "KEY", key: "escape" });
@@ -31,7 +29,7 @@ test("Vim core switches between insert and normal", () => {
 
   result = transitionVim(result.snapshot, { type: "KEY", key: "i" });
   assert.equal(getVimMode(result.snapshot), "insert");
-  assert.deepEqual(result.actions, [{ type: "placeCaretBeforeCursor" }]);
+  assert.deepEqual(result.actions, []);
 });
 
 test("Vim core emits Normal-mode insert-entry actions", () => {
@@ -79,9 +77,6 @@ test("Pi keymap normalizes raw input into Vim keys", () => {
 test("Vim action dispatcher calls matching handler method", () => {
   const calls: string[] = [];
   const handler = {
-    placeCursorOnPreviousCharacter: () =>
-      calls.push("placeCursorOnPreviousCharacter"),
-    placeCaretBeforeCursor: () => calls.push("placeCaretBeforeCursor"),
     placeCaretAfterCursor: () => calls.push("placeCaretAfterCursor"),
     placeCaretAtLineEnd: () => calls.push("placeCaretAtLineEnd"),
     moveCursorLeft: () => calls.push("moveCursorLeft"),

@@ -40,13 +40,6 @@ export class VimPiEditor extends CustomEditor implements VimActionHandler {
     return this.snapshot;
   }
 
-  placeCursorOnPreviousCharacter(): void {
-    if (this.getCursor().col > 0) this.moveCursorLeft();
-  }
-
-  /** Pi's caret column already matches Vim's `i` placement before the Normal cursor. */
-  placeCaretBeforeCursor(): void {}
-
   /** Move one column left using Pi's caret model. Normal-mode left already clamps at 0. */
   moveCursorLeft(): void {
     super.handleInput("\x1b[D");
