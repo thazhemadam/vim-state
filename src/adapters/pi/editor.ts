@@ -11,15 +11,15 @@ import {
 } from "@earendil-works/pi-tui";
 
 import { getVimMode, getVimModeLabel } from "../../vim/selectors.js";
+import { applyVimAction, type VimActionHandler } from "../../vim/actions.js";
 import {
   getInitialVimSnapshot,
   transitionVim,
   type VimSnapshot,
 } from "../../vim/transition.js";
-import { applyVimActionToPiEditor } from "./apply-action.js";
 import { piInputToVimEvent } from "./keymap.js";
 
-export class VimPiEditor extends CustomEditor {
+export class VimPiEditor extends CustomEditor implements VimActionHandler {
   private snapshot: VimSnapshot = getInitialVimSnapshot().snapshot;
   private cursorStyle: "bar" | "block" | undefined;
   private readonly appKeybindings: KeybindingsManager;
@@ -40,43 +40,50 @@ export class VimPiEditor extends CustomEditor {
     return this.snapshot;
   }
 
+  placeCursorOnPreviousCharacter(): void {
+    if (this.getCursor().col > 0) this.moveCursorLeft();
+  }
+
+  /** Pi's caret column already matches Vim's `i` placement before the Normal cursor. */
+  placeCaretBeforeCursor(): void {}
+
   /** Move one column left using Pi's caret model. Normal-mode left already clamps at 0. */
-  moveCaretLeft(): void {
+  moveCursorLeft(): void {
     super.handleInput("\x1b[D");
   }
 
   /** Move down, then clamp because Vim Normal mode cannot rest past the last character. */
-  moveCaretDown(): void {
+  moveCursorDown(): void {
     super.handleInput("\x1b[B");
     this.clampNormalCursorColumn();
   }
 
   /** Move up, then clamp because target lines may be shorter than the source line. */
-  moveCaretUp(): void {
+  moveCursorUp(): void {
     super.handleInput("\x1b[A");
     this.clampNormalCursorColumn();
   }
 
   /** Move right only while another character exists under the Normal-mode cursor. */
-  moveCaretRight(): void {
+  moveCursorRight(): void {
     const { line, col } = this.getCursor();
     if (col < normalMaxColumn(this.getLines()[line] ?? ""))
       super.handleInput("\x1b[C");
   }
 
   /** Move to the first column on the current line. */
-  moveCaretToLineStart(): void {
+  moveCursorToLineStart(): void {
     super.handleInput("\x01");
   }
 
   /** Move to the last Normal-mode character on the current line. */
-  moveCaretToLineEnd(): void {
+  moveCursorToLineEnd(): void {
     super.handleInput("\x05");
     this.clampNormalCursorColumn();
   }
 
   /** Move to the first non-blank character on the current line. */
-  moveCaretToFirstNonBlank(): void {
+  moveCursorToFirstNonBlank(): void {
     this.moveCaretToColumn(
       firstNonBlankColumn(this.getLines()[this.getCursor().line] ?? ""),
     );
@@ -117,7 +124,7 @@ export class VimPiEditor extends CustomEditor {
     this.snapshot = result.snapshot;
     this.syncCursorStyle();
 
-    for (const action of result.actions) applyVimActionToPiEditor(action, this);
+    for (const action of result.actions) applyVimAction(action, this);
 
     // If you were in Insert mode and are still in Insert mode,
     // then pass the data to the underlying Pi editor.

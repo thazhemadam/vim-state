@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import vimPiExtension, { VimPiEditor } from "../src/index.js";
-import { applyVimActionToPiEditor } from "../src/adapters/pi/apply-action.js";
 import { matchesKey } from "@earendil-works/pi-tui";
 
 import { normalizePiKey } from "../src/adapters/pi/keymap.js";
+import { applyVimAction } from "../src/vim/actions.js";
 import { getVimMode } from "../src/vim/selectors.js";
 import {
   getInitialVimSnapshot,
@@ -76,67 +76,30 @@ test("Pi keymap normalizes raw input into Vim keys", () => {
   assert.equal(normalizePiKey("\x1b[99;5u"), "ctrl+c");
 });
 
-test("Pi cursor actions apply initial Vim cursor rules", () => {
-  const cursorTarget = (col: number) => ({
-    getCursor: () => ({ line: 0, col }),
-    moveCaretLeft: () => {
-      col -= 1;
-    },
-    moveCaretDown: () => {},
-    moveCaretUp: () => {},
-    moveCaretRight: () => {
-      col += 1;
-    },
-    moveCaretToLineStart: () => {
-      col = 0;
-    },
-    moveCaretToLineEnd: () => {
-      col = 4;
-    },
-    moveCaretToFirstNonBlank: () => {
-      col = 2;
-    },
-    insertLineBelow: () => {},
-    insertLineAbove: () => {},
-    placeCaretAtLineStart: () => {
-      col = 0;
-    },
-    placeCaretAfterCursor: () => {
-      col += 1;
-    },
-    placeCaretAtLineEnd: () => {
-      col = 4;
-    },
-  });
+test("Vim action dispatcher calls matching handler method", () => {
+  const calls: string[] = [];
+  const handler = {
+    placeCursorOnPreviousCharacter: () =>
+      calls.push("placeCursorOnPreviousCharacter"),
+    placeCaretBeforeCursor: () => calls.push("placeCaretBeforeCursor"),
+    placeCaretAfterCursor: () => calls.push("placeCaretAfterCursor"),
+    placeCaretAtLineEnd: () => calls.push("placeCaretAtLineEnd"),
+    moveCursorLeft: () => calls.push("moveCursorLeft"),
+    moveCursorDown: () => calls.push("moveCursorDown"),
+    moveCursorUp: () => calls.push("moveCursorUp"),
+    moveCursorRight: () => calls.push("moveCursorRight"),
+    moveCursorToLineStart: () => calls.push("moveCursorToLineStart"),
+    moveCursorToLineEnd: () => calls.push("moveCursorToLineEnd"),
+    moveCursorToFirstNonBlank: () => calls.push("moveCursorToFirstNonBlank"),
+    insertLineBelow: () => calls.push("insertLineBelow"),
+    insertLineAbove: () => calls.push("insertLineAbove"),
+    placeCaretAtLineStart: () => calls.push("placeCaretAtLineStart"),
+  };
 
-  let target = cursorTarget(0);
-  applyVimActionToPiEditor({ type: "placeCursorOnPreviousCharacter" }, target);
-  assert.equal(target.getCursor().col, 0);
+  applyVimAction({ type: "moveCursorRight" }, handler);
+  applyVimAction({ type: "insertLineBelow" }, handler);
 
-  target = cursorTarget(2);
-  applyVimActionToPiEditor({ type: "placeCursorOnPreviousCharacter" }, target);
-  assert.equal(target.getCursor().col, 1);
-
-  applyVimActionToPiEditor({ type: "placeCaretBeforeCursor" }, target);
-  assert.equal(target.getCursor().col, 1);
-
-  applyVimActionToPiEditor({ type: "moveCursorRight" }, target);
-  assert.equal(target.getCursor().col, 2);
-  applyVimActionToPiEditor({ type: "moveCursorLeft" }, target);
-  assert.equal(target.getCursor().col, 1);
-  applyVimActionToPiEditor({ type: "moveCursorToLineEnd" }, target);
-  assert.equal(target.getCursor().col, 4);
-  applyVimActionToPiEditor({ type: "moveCursorToLineStart" }, target);
-  assert.equal(target.getCursor().col, 0);
-  applyVimActionToPiEditor({ type: "moveCursorToFirstNonBlank" }, target);
-  assert.equal(target.getCursor().col, 2);
-  applyVimActionToPiEditor({ type: "placeCaretAtLineStart" }, target);
-  assert.equal(target.getCursor().col, 0);
-
-  applyVimActionToPiEditor({ type: "placeCaretAfterCursor" }, target);
-  assert.equal(target.getCursor().col, 1);
-  applyVimActionToPiEditor({ type: "placeCaretAtLineEnd" }, target);
-  assert.equal(target.getCursor().col, 4);
+  assert.deepEqual(calls, ["moveCursorRight", "insertLineBelow"]);
 });
 
 test("Pi extension installs a Vim editor", () => {
