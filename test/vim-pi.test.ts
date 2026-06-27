@@ -48,7 +48,7 @@ test("Vim core emits Normal-mode insert-entry actions", () => {
   }
 });
 
-test("Vim core emits Normal-mode hjkl cursor actions", () => {
+test("Vim core emits Normal-mode cursor actions", () => {
   let result = getInitialVimSnapshot();
   result = transitionVim(result.snapshot, { type: "KEY", key: "escape" });
 
@@ -57,6 +57,8 @@ test("Vim core emits Normal-mode hjkl cursor actions", () => {
     ["j", "moveCursorDown"],
     ["k", "moveCursorUp"],
     ["l", "moveCursorRight"],
+    ["0", "moveCursorToLineStart"],
+    ["$", "moveCursorToLineEnd"],
   ] as const) {
     result = transitionVim(result.snapshot, { type: "KEY", key });
     assert.equal(getVimMode(result.snapshot), "normal");

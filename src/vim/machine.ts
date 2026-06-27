@@ -4,6 +4,8 @@ import {
   MOVE_CURSOR_DOWN,
   MOVE_CURSOR_LEFT,
   MOVE_CURSOR_RIGHT,
+  MOVE_CURSOR_TO_LINE_END,
+  MOVE_CURSOR_TO_LINE_START,
   MOVE_CURSOR_UP,
   PLACE_CARET_AFTER_CURSOR,
   PLACE_CARET_AT_FIRST_NON_BLANK,
@@ -30,6 +32,8 @@ export const vimMachine = setup({
     [MOVE_CURSOR_DOWN]: () => {},
     [MOVE_CURSOR_UP]: () => {},
     [MOVE_CURSOR_RIGHT]: () => {},
+    [MOVE_CURSOR_TO_LINE_START]: () => {},
+    [MOVE_CURSOR_TO_LINE_END]: () => {},
   },
   guards: {
     keyIs: ({ event }, params: { key: string }) => event.key === params.key,
@@ -86,6 +90,14 @@ export const vimMachine = setup({
           {
             guard: { type: "keyIs", params: { key: "l" } },
             actions: { type: MOVE_CURSOR_RIGHT },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "0" } },
+            actions: { type: MOVE_CURSOR_TO_LINE_START },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "$" } },
+            actions: { type: MOVE_CURSOR_TO_LINE_END },
           },
         ],
       },

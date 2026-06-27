@@ -15,6 +15,8 @@ export const MOVE_CURSOR_LEFT = "moveCursorLeft" as const;
 export const MOVE_CURSOR_DOWN = "moveCursorDown" as const;
 export const MOVE_CURSOR_UP = "moveCursorUp" as const;
 export const MOVE_CURSOR_RIGHT = "moveCursorRight" as const;
+export const MOVE_CURSOR_TO_LINE_START = "moveCursorToLineStart" as const;
+export const MOVE_CURSOR_TO_LINE_END = "moveCursorToLineEnd" as const;
 
 export type VimAction =
   | { type: typeof PLACE_CURSOR_ON_PREVIOUS_CHARACTER }
@@ -25,7 +27,9 @@ export type VimAction =
   | { type: typeof MOVE_CURSOR_LEFT }
   | { type: typeof MOVE_CURSOR_DOWN }
   | { type: typeof MOVE_CURSOR_UP }
-  | { type: typeof MOVE_CURSOR_RIGHT };
+  | { type: typeof MOVE_CURSOR_RIGHT }
+  | { type: typeof MOVE_CURSOR_TO_LINE_START }
+  | { type: typeof MOVE_CURSOR_TO_LINE_END };
 
 export function toVimAction(type: string): VimAction | undefined {
   switch (type) {
@@ -47,6 +51,10 @@ export function toVimAction(type: string): VimAction | undefined {
       return { type: MOVE_CURSOR_UP };
     case MOVE_CURSOR_RIGHT:
       return { type: MOVE_CURSOR_RIGHT };
+    case MOVE_CURSOR_TO_LINE_START:
+      return { type: MOVE_CURSOR_TO_LINE_START };
+    case MOVE_CURSOR_TO_LINE_END:
+      return { type: MOVE_CURSOR_TO_LINE_END };
     default:
       return undefined;
   }
