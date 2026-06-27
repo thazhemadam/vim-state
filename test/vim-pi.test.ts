@@ -62,6 +62,7 @@ test("Vim core emits Normal-mode cursor actions", () => {
     ["0", "moveCursorToLineStart"],
     ["$", "moveCursorToLineEnd"],
     ["^", "moveCursorToFirstNonBlank"],
+    ["_", "moveCursorToFirstNonBlank"],
   ] as const) {
     result = transitionVim(result.snapshot, { type: "KEY", key });
     assert.equal(getVimMode(result.snapshot), "normal");
@@ -169,6 +170,15 @@ test("VimPiEditor applies Normal-mode hjkl navigation", () => {
   assert.deepEqual(editor.getCursor(), { line: 0, col: 2 });
   editor.handleInput("0");
   assert.deepEqual(editor.getCursor(), { line: 0, col: 0 });
+
+  const firstNonBlankEditor = createEditor();
+  firstNonBlankEditor.setText("  abc");
+  firstNonBlankEditor.handleInput("\x1b");
+  firstNonBlankEditor.handleInput("^");
+  assert.deepEqual(firstNonBlankEditor.getCursor(), { line: 0, col: 2 });
+  firstNonBlankEditor.handleInput("0");
+  firstNonBlankEditor.handleInput("_");
+  assert.deepEqual(firstNonBlankEditor.getCursor(), { line: 0, col: 2 });
 
   const verticalEditor = createEditor();
   verticalEditor.setText("ab\ncd");

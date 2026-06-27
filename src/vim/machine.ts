@@ -127,6 +127,10 @@ export const vimMachine = setup({
             guard: { type: "keyIs", params: { key: "^" } },
             actions: { type: MOVE_CURSOR_TO_FIRST_NON_BLANK },
           },
+          {
+            guard: { type: "keyIs", params: { key: "_" } },
+            actions: { type: MOVE_CURSOR_TO_FIRST_NON_BLANK },
+          },
         ],
       },
     },
