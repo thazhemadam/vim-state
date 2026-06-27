@@ -1,16 +1,48 @@
-import type { VimState } from "./state.js";
+import {
+  initialTransition,
+  transition as xstateTransition,
+  type SnapshotFrom,
+} from "xstate";
 
-/**
- * Pure transition engine placeholder.
- *
- * Eventually this will be the core function:
- *   (state, key, context) -> { state, action? }
- * with no direct dependency on Pi UI classes.
- */
+import { toVimAction, type VimAction } from "./actions.js";
+import type { VimEvent } from "./events.js";
+import { vimMachine } from "./machine.js";
+
+export type VimSnapshot = SnapshotFrom<typeof vimMachine>;
+
 export interface VimTransitionResult {
-  state: VimState;
+  snapshot: VimSnapshot;
+  actions: VimAction[];
 }
 
-export function transition(state: VimState, _key: string): VimTransitionResult {
-  return { state };
+interface XStateActionLike {
+  type: string;
+}
+
+export function getInitialVimSnapshot(): VimTransitionResult {
+  const [snapshot, actions] = initialTransition(vimMachine);
+
+  return {
+    snapshot,
+    actions: collectVimActions(actions),
+  };
+}
+
+export function transitionVim(
+  snapshot: VimSnapshot,
+  event: VimEvent,
+): VimTransitionResult {
+  const [nextSnapshot, actions] = xstateTransition(vimMachine, snapshot, event);
+
+  return {
+    snapshot: nextSnapshot,
+    actions: collectVimActions(actions),
+  };
+}
+
+function collectVimActions(actions: readonly XStateActionLike[]): VimAction[] {
+  return actions.flatMap((action) => {
+    const vimAction = toVimAction(action.type);
+    return vimAction ? [vimAction] : [];
+  });
 }

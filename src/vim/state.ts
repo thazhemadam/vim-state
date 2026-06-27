@@ -1,25 +1,9 @@
 /**
- * Vim modal state model.
+ * Public modal state values exposed by the Vim core.
  *
- * This file is intentionally small during scaffolding. The implementation will
- * expand this into a discriminated union covering Vim's observable mode() codes
- * plus transient parser states such as count/register/operator prefixes.
+ * Keep this aligned with `vimMachine` state node names and Vim's observable
+ * `mode()` values where practical.
  */
+export type VimMode = "insert" | "normal";
 
-export type VimMode =
-  | "normal"
-  | "insert"
-  | "replace"
-  | "visual-char"
-  | "visual-line"
-  | "visual-block"
-  | "operator-pending"
-  | "command-line";
-
-export interface VimState {
-  mode: VimMode;
-}
-
-export const initialVimState: VimState = {
-  mode: "insert",
-};
+export const initialVimMode: VimMode = "insert";

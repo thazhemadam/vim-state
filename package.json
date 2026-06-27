@@ -19,16 +19,18 @@
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "test": "echo \"tests not implemented yet\""
+    "self-check": "tsx scripts/self-check.ts",
+    "test": "npm run self-check"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
     "@earendil-works/pi-tui": "*"
   },
   "dependencies": {
-    "xstate": "^5.32.2"
+    "xstate": "5.32.1"
   },
   "devDependencies": {
+    "tsx": "^4.22.4",
     "typescript": "^5.9.3"
   }
 }
