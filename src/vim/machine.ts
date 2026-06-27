@@ -5,6 +5,9 @@ import {
   MOVE_CURSOR_LEFT,
   MOVE_CURSOR_RIGHT,
   MOVE_CURSOR_UP,
+  PLACE_CARET_AFTER_CURSOR,
+  PLACE_CARET_AT_FIRST_NON_BLANK,
+  PLACE_CARET_AT_LINE_END,
   PLACE_CARET_BEFORE_CURSOR,
   PLACE_CURSOR_ON_PREVIOUS_CHARACTER,
 } from "./actions.js";
@@ -20,6 +23,9 @@ export const vimMachine = setup({
   actions: {
     [PLACE_CURSOR_ON_PREVIOUS_CHARACTER]: () => {},
     [PLACE_CARET_BEFORE_CURSOR]: () => {},
+    [PLACE_CARET_AFTER_CURSOR]: () => {},
+    [PLACE_CARET_AT_LINE_END]: () => {},
+    [PLACE_CARET_AT_FIRST_NON_BLANK]: () => {},
     [MOVE_CURSOR_LEFT]: () => {},
     [MOVE_CURSOR_DOWN]: () => {},
     [MOVE_CURSOR_UP]: () => {},
@@ -49,6 +55,21 @@ export const vimMachine = setup({
             guard: { type: "keyIs", params: { key: "i" } },
             target: "insert",
             actions: { type: PLACE_CARET_BEFORE_CURSOR },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "a" } },
+            target: "insert",
+            actions: { type: PLACE_CARET_AFTER_CURSOR },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "A" } },
+            target: "insert",
+            actions: { type: PLACE_CARET_AT_LINE_END },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "I" } },
+            target: "insert",
+            actions: { type: PLACE_CARET_AT_FIRST_NON_BLANK },
           },
           {
             guard: { type: "keyIs", params: { key: "h" } },
