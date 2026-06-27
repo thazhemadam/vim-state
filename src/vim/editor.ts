@@ -13,5 +13,6 @@ export interface VimEditor {
   placeCaretAtLineStart(): void;
   deleteCharUnderCursor(): void;
   deleteCharBeforeCursor(): void;
+  replaceCharUnderCursor(char: string): void;
   clampCursorColumn(): void;
 }

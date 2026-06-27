@@ -137,6 +137,15 @@ export class VimPiEditor extends CustomEditor implements VimEditor {
     while (this.cursor.col < targetCol) super.handleInput(ARROW_RIGHT);
   }
 
+  /** Replace the Normal-mode character under the cursor and keep the cursor on the replacement. */
+  replaceCharUnderCursor(char: string): void {
+    if (this.cursor.col >= this.currentLine.length) return;
+
+    this.deleteCharUnderCursor();
+    super.handleInput(char);
+    this.moveCursorLeft();
+  }
+
   /** Move left until the Normal-mode cursor sits on a character, or column 0 for an empty line. */
   clampCursorColumn(): void {
     while (this.cursor.col > normalMaxColumn(this.currentLine)) {

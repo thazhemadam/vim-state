@@ -27,6 +27,8 @@ function createVimCore(calls: string[] = []) {
     placeCaretAtLineStart: () => calls.push("placeCaretAtLineStart"),
     deleteCharUnderCursor: () => calls.push("deleteCharUnderCursor"),
     deleteCharBeforeCursor: () => calls.push("deleteCharBeforeCursor"),
+    replaceCharUnderCursor: (char) =>
+      calls.push(`replaceCharUnderCursor:${char}`),
     clampCursorColumn: () => calls.push("clampCursorColumn"),
   };
 
