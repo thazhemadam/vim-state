@@ -6,8 +6,9 @@ export {
   piInputToVimEvent,
 } from "./adapters/pi/keymap.js";
 
-export * from "./vim/actions.js";
+export * from "./vim/context.js";
+export * from "./vim/editor.js";
 export * from "./vim/events.js";
+export * from "./vim/machine.js";
 export * from "./vim/selectors.js";
 export * from "./vim/state.js";
-export * from "./vim/transition.js";

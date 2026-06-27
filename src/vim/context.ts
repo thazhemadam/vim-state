@@ -1,10 +1,8 @@
-/**
- * Extended Vim machine context.
- *
- * Empty for the core shell. Counts, registers, pending operators, visual
- * anchors, and command-line buffers will be added here as milestones require
- * them.
- */
-export interface VimContext {}
+import type { VimEditor } from "./editor.js";
 
-export const initialVimContext: VimContext = {};
+/** Runtime dependencies and bounded parser data owned by the Vim machine. */
+export interface VimContext {
+  editor: VimEditor;
+}
+
+export type VimInput = VimContext;

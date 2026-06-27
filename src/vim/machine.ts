@@ -1,24 +1,6 @@
-import { setup } from "xstate";
+import { setup, type SnapshotFrom } from "xstate";
 
-import {
-  CLAMP_CURSOR_COLUMN,
-  DELETE_CHAR_BEFORE_CURSOR,
-  DELETE_CHAR_UNDER_CURSOR,
-  MOVE_CURSOR_DOWN,
-  MOVE_CURSOR_LEFT,
-  MOVE_CURSOR_RIGHT,
-  INSERT_LINE_ABOVE,
-  INSERT_LINE_BELOW,
-  MOVE_CURSOR_TO_FIRST_NON_BLANK,
-  MOVE_CURSOR_TO_LINE_END,
-  MOVE_CURSOR_TO_LINE_START,
-  MOVE_CURSOR_UP,
-  PLACE_CARET_AFTER_CURSOR,
-  PLACE_CARET_AT_LINE_END,
-  PLACE_CARET_AT_LINE_START,
-  VIM_ACTION_TYPES,
-} from "./actions.js";
-import { initialVimContext, type VimContext } from "./context.js";
+import { type VimContext, type VimInput } from "./context.js";
 import type { VimEvent } from "./events.js";
 import { initialVimMode } from "./state.js";
 
@@ -26,16 +8,37 @@ export const vimMachine = setup({
   types: {
     context: {} as VimContext,
     events: {} as VimEvent,
+    input: {} as VimInput,
   },
-  actions: Object.fromEntries(
-    VIM_ACTION_TYPES.map((type) => [type, () => {}] as const),
-  ),
+  actions: {
+    placeCaretAfterCursor: ({ context }) =>
+      context.editor.placeCaretAfterCursor(),
+    placeCaretAtLineEnd: ({ context }) => context.editor.placeCaretAtLineEnd(),
+    moveCursorLeft: ({ context }) => context.editor.moveCursorLeft(),
+    moveCursorDown: ({ context }) => context.editor.moveCursorDown(),
+    moveCursorUp: ({ context }) => context.editor.moveCursorUp(),
+    moveCursorRight: ({ context }) => context.editor.moveCursorRight(),
+    moveCursorToLineStart: ({ context }) =>
+      context.editor.moveCursorToLineStart(),
+    moveCursorToLineEnd: ({ context }) => context.editor.moveCursorToLineEnd(),
+    moveCursorToFirstNonBlank: ({ context }) =>
+      context.editor.moveCursorToFirstNonBlank(),
+    insertLineBelow: ({ context }) => context.editor.insertLineBelow(),
+    insertLineAbove: ({ context }) => context.editor.insertLineAbove(),
+    placeCaretAtLineStart: ({ context }) =>
+      context.editor.placeCaretAtLineStart(),
+    deleteCharUnderCursor: ({ context }) =>
+      context.editor.deleteCharUnderCursor(),
+    deleteCharBeforeCursor: ({ context }) =>
+      context.editor.deleteCharBeforeCursor(),
+    clampCursorColumn: ({ context }) => context.editor.clampCursorColumn(),
+  },
   guards: {
     keyIs: ({ event }, params: { key: string }) => event.key === params.key,
   },
 }).createMachine({
   id: "vim-pi",
-  context: initialVimContext,
+  context: ({ input }) => ({ editor: input.editor }),
   initial: initialVimMode,
   states: {
     insert: {
@@ -43,7 +46,7 @@ export const vimMachine = setup({
         KEY: {
           guard: { type: "keyIs", params: { key: "escape" } },
           target: "normal",
-          actions: { type: MOVE_CURSOR_LEFT },
+          actions: { type: "moveCursorLeft" },
         },
       },
     },
@@ -57,78 +60,78 @@ export const vimMachine = setup({
           {
             guard: { type: "keyIs", params: { key: "a" } },
             target: "insert",
-            actions: { type: PLACE_CARET_AFTER_CURSOR },
+            actions: { type: "placeCaretAfterCursor" },
           },
           {
             guard: { type: "keyIs", params: { key: "A" } },
             target: "insert",
-            actions: { type: PLACE_CARET_AT_LINE_END },
+            actions: { type: "placeCaretAtLineEnd" },
           },
           {
             guard: { type: "keyIs", params: { key: "I" } },
             target: "insert",
-            actions: { type: MOVE_CURSOR_TO_FIRST_NON_BLANK },
+            actions: { type: "moveCursorToFirstNonBlank" },
           },
           {
             guard: { type: "keyIs", params: { key: "o" } },
             target: "insert",
             actions: [
-              { type: INSERT_LINE_BELOW },
-              { type: PLACE_CARET_AT_LINE_START },
+              { type: "insertLineBelow" },
+              { type: "placeCaretAtLineStart" },
             ],
           },
           {
             guard: { type: "keyIs", params: { key: "O" } },
             target: "insert",
             actions: [
-              { type: INSERT_LINE_ABOVE },
-              { type: PLACE_CARET_AT_LINE_START },
+              { type: "insertLineAbove" },
+              { type: "placeCaretAtLineStart" },
             ],
           },
           {
             guard: { type: "keyIs", params: { key: "h" } },
-            actions: { type: MOVE_CURSOR_LEFT },
+            actions: { type: "moveCursorLeft" },
           },
           {
             guard: { type: "keyIs", params: { key: "j" } },
-            actions: { type: MOVE_CURSOR_DOWN },
+            actions: { type: "moveCursorDown" },
           },
           {
             guard: { type: "keyIs", params: { key: "k" } },
-            actions: { type: MOVE_CURSOR_UP },
+            actions: { type: "moveCursorUp" },
           },
           {
             guard: { type: "keyIs", params: { key: "l" } },
-            actions: { type: MOVE_CURSOR_RIGHT },
+            actions: { type: "moveCursorRight" },
           },
           {
             guard: { type: "keyIs", params: { key: "0" } },
-            actions: { type: MOVE_CURSOR_TO_LINE_START },
+            actions: { type: "moveCursorToLineStart" },
           },
           {
             guard: { type: "keyIs", params: { key: "$" } },
-            actions: { type: MOVE_CURSOR_TO_LINE_END },
+            actions: { type: "moveCursorToLineEnd" },
           },
           {
             guard: { type: "keyIs", params: { key: "^" } },
-            actions: { type: MOVE_CURSOR_TO_FIRST_NON_BLANK },
+            actions: { type: "moveCursorToFirstNonBlank" },
           },
           {
             guard: { type: "keyIs", params: { key: "_" } },
-            actions: { type: MOVE_CURSOR_TO_FIRST_NON_BLANK },
+            actions: { type: "moveCursorToFirstNonBlank" },
           },
           {
             guard: { type: "keyIs", params: { key: "x" } },
             actions: [
-              { type: DELETE_CHAR_UNDER_CURSOR },
-              { type: CLAMP_CURSOR_COLUMN },
+              { type: "deleteCharUnderCursor" },
+              { type: "clampCursorColumn" },
             ],
           },
           {
             guard: { type: "keyIs", params: { key: "X" } },
             actions: [
-              { type: DELETE_CHAR_BEFORE_CURSOR },
-              { type: MOVE_CURSOR_LEFT },
+              { type: "deleteCharBeforeCursor" },
+              { type: "moveCursorLeft" },
             ],
           },
         ],
@@ -136,3 +139,5 @@ export const vimMachine = setup({
     },
   },
 });
+
+export type VimSnapshot = SnapshotFrom<typeof vimMachine>;

@@ -4,98 +4,15 @@ import test from "node:test";
 import vimPiExtension, { VimPiEditor } from "../src/index.js";
 import { matchesKey } from "@earendil-works/pi-tui";
 
+import { createActor } from "xstate";
+
 import { normalizePiKey } from "../src/adapters/pi/keymap.js";
-import { applyVimAction } from "../src/vim/actions.js";
+import type { VimEditor } from "../src/vim/editor.js";
+import { vimMachine } from "../src/vim/machine.js";
 import { getVimMode } from "../src/vim/selectors.js";
-import {
-  getInitialVimSnapshot,
-  transitionVim,
-  type VimSnapshot,
-} from "../src/vim/transition.js";
 
-test("Vim core switches between insert and normal", () => {
-  let result = getInitialVimSnapshot();
-  assert.equal(getVimMode(result.snapshot), "insert");
-  assert.deepEqual(result.actions, []);
-
-  result = transitionVim(result.snapshot, { type: "KEY", key: "escape" });
-  assert.equal(getVimMode(result.snapshot), "normal");
-  assert.deepEqual(result.actions, [{ type: "moveCursorLeft" }]);
-
-  const snapshotBeforeNoop: VimSnapshot = result.snapshot;
-  result = transitionVim(result.snapshot, { type: "KEY", key: "escape" });
-  assert.equal(result.snapshot.value, snapshotBeforeNoop.value);
-  assert.deepEqual(result.actions, []);
-
-  result = transitionVim(result.snapshot, { type: "KEY", key: "i" });
-  assert.equal(getVimMode(result.snapshot), "insert");
-  assert.deepEqual(result.actions, []);
-});
-
-test("Vim core emits Normal-mode insert-entry actions", () => {
-  for (const [key, actions] of [
-    ["a", [{ type: "placeCaretAfterCursor" }]],
-    ["A", [{ type: "placeCaretAtLineEnd" }]],
-    ["I", [{ type: "moveCursorToFirstNonBlank" }]],
-    ["o", [{ type: "insertLineBelow" }, { type: "placeCaretAtLineStart" }]],
-    ["O", [{ type: "insertLineAbove" }, { type: "placeCaretAtLineStart" }]],
-  ] as const) {
-    let result = getInitialVimSnapshot();
-    result = transitionVim(result.snapshot, { type: "KEY", key: "escape" });
-    result = transitionVim(result.snapshot, { type: "KEY", key });
-    assert.equal(getVimMode(result.snapshot), "insert");
-    assert.deepEqual(result.actions, actions);
-  }
-});
-
-test("Vim core emits Normal-mode cursor actions", () => {
-  let result = getInitialVimSnapshot();
-  result = transitionVim(result.snapshot, { type: "KEY", key: "escape" });
-
-  for (const [key, action] of [
-    ["h", "moveCursorLeft"],
-    ["j", "moveCursorDown"],
-    ["k", "moveCursorUp"],
-    ["l", "moveCursorRight"],
-    ["0", "moveCursorToLineStart"],
-    ["$", "moveCursorToLineEnd"],
-    ["^", "moveCursorToFirstNonBlank"],
-    ["_", "moveCursorToFirstNonBlank"],
-  ] as const) {
-    result = transitionVim(result.snapshot, { type: "KEY", key });
-    assert.equal(getVimMode(result.snapshot), "normal");
-    assert.deepEqual(result.actions, [{ type: action }]);
-  }
-});
-
-test("Vim core emits Normal-mode character deletion actions", () => {
-  let result = getInitialVimSnapshot();
-  result = transitionVim(result.snapshot, { type: "KEY", key: "escape" });
-
-  result = transitionVim(result.snapshot, { type: "KEY", key: "x" });
-  assert.equal(getVimMode(result.snapshot), "normal");
-  assert.deepEqual(result.actions, [
-    { type: "deleteCharUnderCursor" },
-    { type: "clampCursorColumn" },
-  ]);
-
-  result = transitionVim(result.snapshot, { type: "KEY", key: "X" });
-  assert.equal(getVimMode(result.snapshot), "normal");
-  assert.deepEqual(result.actions, [
-    { type: "deleteCharBeforeCursor" },
-    { type: "moveCursorLeft" },
-  ]);
-});
-
-test("Pi keymap normalizes raw input into Vim keys", () => {
-  assert.equal(normalizePiKey("\x1b"), "escape");
-  assert.equal(normalizePiKey("i"), "i");
-  assert.equal(normalizePiKey("\x1b[99;5u"), "ctrl+c");
-});
-
-test("Vim action dispatcher calls matching handler method", () => {
-  const calls: string[] = [];
-  const handler = {
+function createVimCore(calls: string[] = []) {
+  const editor: VimEditor = {
     placeCaretAfterCursor: () => calls.push("placeCaretAfterCursor"),
     placeCaretAtLineEnd: () => calls.push("placeCaretAtLineEnd"),
     moveCursorLeft: () => calls.push("moveCursorLeft"),
@@ -113,10 +30,90 @@ test("Vim action dispatcher calls matching handler method", () => {
     clampCursorColumn: () => calls.push("clampCursorColumn"),
   };
 
-  applyVimAction({ type: "moveCursorRight" }, handler);
-  applyVimAction({ type: "insertLineBelow" }, handler);
+  return createActor(vimMachine, { input: { editor } }).start();
+}
 
-  assert.deepEqual(calls, ["moveCursorRight", "insertLineBelow"]);
+test("Vim core switches between insert and normal", () => {
+  const calls: string[] = [];
+  const actor = createVimCore(calls);
+  assert.equal(getVimMode(actor.getSnapshot()), "insert");
+  assert.deepEqual(calls, []);
+
+  actor.send({ type: "KEY", key: "escape" });
+  assert.equal(getVimMode(actor.getSnapshot()), "normal");
+  assert.deepEqual(calls, ["moveCursorLeft"]);
+
+  const valueBeforeNoop = actor.getSnapshot().value;
+  actor.send({ type: "KEY", key: "escape" });
+  assert.equal(actor.getSnapshot().value, valueBeforeNoop);
+  assert.deepEqual(calls, ["moveCursorLeft"]);
+
+  actor.send({ type: "KEY", key: "i" });
+  assert.equal(getVimMode(actor.getSnapshot()), "insert");
+  assert.deepEqual(calls, ["moveCursorLeft"]);
+});
+
+test("Vim core calls Normal-mode insert-entry editor methods", () => {
+  for (const [key, expectedCalls] of [
+    ["a", ["placeCaretAfterCursor"]],
+    ["A", ["placeCaretAtLineEnd"]],
+    ["I", ["moveCursorToFirstNonBlank"]],
+    ["o", ["insertLineBelow", "placeCaretAtLineStart"]],
+    ["O", ["insertLineAbove", "placeCaretAtLineStart"]],
+  ] as const) {
+    const calls: string[] = [];
+    const actor = createVimCore(calls);
+    actor.send({ type: "KEY", key: "escape" });
+    calls.length = 0;
+
+    actor.send({ type: "KEY", key });
+    assert.equal(getVimMode(actor.getSnapshot()), "insert");
+    assert.deepEqual(calls, expectedCalls);
+  }
+});
+
+test("Vim core calls Normal-mode cursor editor methods", () => {
+  const calls: string[] = [];
+  const actor = createVimCore(calls);
+  actor.send({ type: "KEY", key: "escape" });
+
+  for (const [key, expectedCall] of [
+    ["h", "moveCursorLeft"],
+    ["j", "moveCursorDown"],
+    ["k", "moveCursorUp"],
+    ["l", "moveCursorRight"],
+    ["0", "moveCursorToLineStart"],
+    ["$", "moveCursorToLineEnd"],
+    ["^", "moveCursorToFirstNonBlank"],
+    ["_", "moveCursorToFirstNonBlank"],
+  ] as const) {
+    calls.length = 0;
+    actor.send({ type: "KEY", key });
+    assert.equal(getVimMode(actor.getSnapshot()), "normal");
+    assert.deepEqual(calls, [expectedCall]);
+  }
+});
+
+test("Vim core calls Normal-mode character deletion editor methods", () => {
+  const calls: string[] = [];
+  const actor = createVimCore(calls);
+  actor.send({ type: "KEY", key: "escape" });
+  calls.length = 0;
+
+  actor.send({ type: "KEY", key: "x" });
+  assert.equal(getVimMode(actor.getSnapshot()), "normal");
+  assert.deepEqual(calls, ["deleteCharUnderCursor", "clampCursorColumn"]);
+
+  calls.length = 0;
+  actor.send({ type: "KEY", key: "X" });
+  assert.equal(getVimMode(actor.getSnapshot()), "normal");
+  assert.deepEqual(calls, ["deleteCharBeforeCursor", "moveCursorLeft"]);
+});
+
+test("Pi keymap normalizes raw input into Vim keys", () => {
+  assert.equal(normalizePiKey("\x1b"), "escape");
+  assert.equal(normalizePiKey("i"), "i");
+  assert.equal(normalizePiKey("\x1b[99;5u"), "ctrl+c");
 });
 
 test("Pi extension installs a Vim editor", () => {
@@ -252,14 +249,14 @@ test("VimPiEditor applies Normal-mode o O open-line insert entry", () => {
     belowEditor.handleInput(key);
   assert.equal(belowEditor.getText(), "abc\nX");
   assert.deepEqual(belowEditor.getCursor(), { line: 1, col: 1 });
-  assert.equal(getVimMode(belowEditor.getVimSnapshot()), "insert");
+  assert.equal(getVimMode(belowEditor.vimSnapshot), "insert");
 
   const aboveEditor = createEditor();
   for (const key of ["a", "b", "c", "\x1b", "O", "X"])
     aboveEditor.handleInput(key);
   assert.equal(aboveEditor.getText(), "X\nabc");
   assert.deepEqual(aboveEditor.getCursor(), { line: 0, col: 1 });
-  assert.equal(getVimMode(aboveEditor.getVimSnapshot()), "insert");
+  assert.equal(getVimMode(aboveEditor.vimSnapshot), "insert");
 });
 
 test("VimPiEditor delegates insert input and ignores unmapped normal printable keys", () => {
@@ -270,7 +267,7 @@ test("VimPiEditor delegates insert input and ignores unmapped normal printable k
 
   assert.equal(editor.getText(), "abXc");
   assert.deepEqual(editor.getCursor(), { line: 0, col: 3 });
-  assert.equal(getVimMode(editor.getVimSnapshot()), "insert");
+  assert.equal(getVimMode(editor.vimSnapshot), "insert");
   assert.match(editor.render(40).at(-1) ?? "", /-- INSERT --$/);
 });
 

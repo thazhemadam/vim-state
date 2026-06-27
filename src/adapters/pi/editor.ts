@@ -2,6 +2,7 @@ import {
   CustomEditor,
   type KeybindingsManager,
 } from "@earendil-works/pi-coding-agent";
+import { createActor, type ActorRefFrom } from "xstate";
 import {
   truncateToWidth,
   visibleWidth,
@@ -10,13 +11,9 @@ import {
   type TUI,
 } from "@earendil-works/pi-tui";
 
+import type { VimEditor } from "../../vim/editor.js";
+import { vimMachine, type VimSnapshot } from "../../vim/machine.js";
 import { getVimMode, getVimModeLabel } from "../../vim/selectors.js";
-import { applyVimAction, type VimActionHandler } from "../../vim/actions.js";
-import {
-  getInitialVimSnapshot,
-  transitionVim,
-  type VimSnapshot,
-} from "../../vim/transition.js";
 import { piInputToVimEvent } from "./keymap.js";
 
 /** Terminal/control key bytes forwarded to the base CustomEditor. */
@@ -30,8 +27,8 @@ const NEWLINE = "\n";
 const DELETE_FORWARD = "\x1b[3~"; // Delete
 const DELETE_BACKWARD = "\x7f"; // Backspace
 
-export class VimPiEditor extends CustomEditor implements VimActionHandler {
-  private snapshot: VimSnapshot = getInitialVimSnapshot().snapshot;
+export class VimPiEditor extends CustomEditor implements VimEditor {
+  private readonly vim: ActorRefFrom<typeof vimMachine>;
   private cursorStyle: "bar" | "block" | undefined;
   private readonly appKeybindings: KeybindingsManager;
 
@@ -42,13 +39,14 @@ export class VimPiEditor extends CustomEditor implements VimActionHandler {
     options?: EditorOptions,
   ) {
     super(tui, theme, keybindings, options);
+    this.vim = createActor(vimMachine, { input: { editor: this } }).start();
     this.appKeybindings = keybindings;
     this.tui.setShowHardwareCursor(true);
     this.syncCursorStyle();
   }
 
-  getVimSnapshot(): VimSnapshot {
-    return this.snapshot;
+  get vimSnapshot(): VimSnapshot {
+    return this.vim.getSnapshot();
   }
 
   /** Move one column left without crossing to the previous line. */
@@ -147,19 +145,16 @@ export class VimPiEditor extends CustomEditor implements VimActionHandler {
   }
 
   handleInput(data: string): void {
-    const wasInsert = getVimMode(this.snapshot) === "insert";
-    const result = transitionVim(this.snapshot, piInputToVimEvent(data));
-    this.snapshot = result.snapshot;
+    const wasInsert = getVimMode(this.vimSnapshot) === "insert";
+    this.vim.send(piInputToVimEvent(data));
     this.syncCursorStyle();
-
-    for (const action of result.actions) applyVimAction(action, this);
 
     // If you were in Insert mode and are still in Insert mode,
     // then pass the data to the underlying Pi editor.
-    if (wasInsert && getVimMode(this.snapshot) === "insert") {
+    if (wasInsert && getVimMode(this.vimSnapshot) === "insert") {
       super.handleInput(data);
     } else if (
-      getVimMode(this.snapshot) === "normal" &&
+      getVimMode(this.vimSnapshot) === "normal" &&
       this.isAppShortcutInput(data)
     ) {
       super.handleInput(data);
@@ -170,11 +165,15 @@ export class VimPiEditor extends CustomEditor implements VimActionHandler {
 
   render(width: number): string[] {
     const lines = super.render(width);
-    if (lines.length === 0) return lines;
+    if (lines.length === 0) {
+      return lines;
+    }
 
-    if (getVimMode(this.snapshot) === "insert") removeReverseVideoCursor(lines);
+    if (getVimMode(this.vimSnapshot) === "insert") {
+      removeReverseVideoCursor(lines);
+    }
 
-    const label = getVimModeLabel(this.snapshot);
+    const label = getVimModeLabel(this.vimSnapshot);
     const last = lines.length - 1;
     if (visibleWidth(lines[last]!) >= label.length) {
       lines[last] =
@@ -212,7 +211,7 @@ export class VimPiEditor extends CustomEditor implements VimActionHandler {
 
   /** Sync terminal cursor shape with Vim mode, avoiding duplicate escape writes. */
   private syncCursorStyle(): void {
-    const style = getVimMode(this.snapshot) === "insert" ? "bar" : "block";
+    const style = getVimMode(this.vimSnapshot) === "insert" ? "bar" : "block";
     if (this.cursorStyle === style) {
       return;
     }

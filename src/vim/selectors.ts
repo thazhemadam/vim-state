@@ -1,5 +1,5 @@
 import type { VimMode } from "./state.js";
-import type { VimSnapshot } from "./transition.js";
+import type { VimSnapshot } from "./machine.js";
 
 export type VimModeLabel = "-- INSERT --" | "-- NORMAL --";
 
