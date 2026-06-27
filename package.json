@@ -19,8 +19,7 @@
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "self-check": "tsx scripts/self-check.ts",
-    "test": "npm run self-check"
+    "test": "tsx --test test/**/*.test.ts"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
