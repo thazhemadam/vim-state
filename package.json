@@ -21,7 +21,8 @@
     "check": "tsc --noEmit",
     "test": "tsx --test test/**/*.test.ts",
     "dev:pi": "PI_CODING_AGENT_DIR=$PWD/.pi-dev/agent PI_CODING_AGENT_SESSION_DIR=$PWD/.pi-dev/sessions pi --no-extensions -e .",
-    "dev:pi:clean": "rm -rf .pi-dev"
+    "dev:pi:clean": "rm -rf .pi-dev",
+    "format": "prettier --write ."
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
@@ -31,6 +32,7 @@
     "xstate": "5.32.1"
   },
   "devDependencies": {
+    "prettier": "^3.8.4",
     "tsx": "^4.22.4",
     "typescript": "^5.9.3"
   }
