@@ -3,8 +3,17 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { VimPiEditor } from "./editor.js";
 
 export default function vimPiExtension(pi: ExtensionAPI): void {
+  let editor: VimPiEditor | undefined;
+
   pi.on("session_start", (_event, ctx) => {
-    ctx.ui.setEditorComponent((tui, theme, keybindings) => new VimPiEditor(tui, theme, keybindings));
+    ctx.ui.setEditorComponent((tui, theme, keybindings) => {
+      editor = new VimPiEditor(tui, theme, keybindings);
+      return editor;
+    });
+  });
+
+  pi.on("session_shutdown", () => {
+    editor?.restoreCursorStyle();
   });
 
   pi.registerCommand("vim-pi-status", {

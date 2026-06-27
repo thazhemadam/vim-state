@@ -88,20 +88,28 @@ test("VimPiEditor delegates insert input and ignores normal printable keys", () 
   assert.match(editor.render(40).at(-1) ?? "", /-- INSERT --$/);
 });
 
-test("VimPiEditor renders insert as caret and normal as block cursor", () => {
-  const editor = createEditor();
+test("VimPiEditor uses hardware bar cursor in insert and fake block cursor in normal", () => {
+  const writes: string[] = [];
+  const editor = createEditor(writes);
+
+  assert.deepEqual(writes, ["\x1b[6 q"]);
 
   for (const key of ["a", "b", "c"]) editor.handleInput(key);
-  assert.match(editor.render(40).join("\n"), /abc│/);
+  const insertRender = editor.render(40).join("\n");
+  assert.doesNotMatch(insertRender, /│/);
+  assert.doesNotMatch(insertRender, /\x1b\[7m/);
 
   editor.handleInput("\x1b");
-  const normalRender = editor.render(40).join("\n");
-  assert.match(normalRender, /\x1b\[7mc\x1b\[0m/);
-  assert.doesNotMatch(normalRender, /│/);
+  assert.deepEqual(writes, ["\x1b[6 q", "\x1b[2 q"]);
+  assert.match(editor.render(40).join("\n"), /\x1b\[7mc\x1b\[0m/);
 });
 
-function createEditor(): VimPiEditor {
-  const fakeTui = { terminal: { rows: 24 }, requestRender: () => {} };
+function createEditor(writes: string[] = []): VimPiEditor {
+  const fakeTui = {
+    terminal: { rows: 24, write: (data: string) => writes.push(data) },
+    requestRender: () => {},
+    setShowHardwareCursor: () => {},
+  };
   const fakeTheme = { borderColor: (value: string) => value, selectList: {} };
   const fakeKeybindings = { matches: () => false };
   return new VimPiEditor(

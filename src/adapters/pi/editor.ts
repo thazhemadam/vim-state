@@ -21,6 +21,7 @@ import { isSingleControlPiInput, piInputToVimEvent } from "./keymap.js";
 
 export class VimPiEditor extends CustomEditor {
   private snapshot: VimSnapshot = getInitialVimSnapshot().snapshot;
+  private cursorStyle: "bar" | "block" | undefined;
 
   constructor(
     tui: TUI,
@@ -29,6 +30,8 @@ export class VimPiEditor extends CustomEditor {
     options?: EditorOptions,
   ) {
     super(tui, theme, keybindings, options);
+    this.tui.setShowHardwareCursor(true);
+    this.syncCursorStyle();
   }
 
   getVimSnapshot(): VimSnapshot {
@@ -44,6 +47,7 @@ export class VimPiEditor extends CustomEditor {
     const wasInsert = getVimMode(this.snapshot) === "insert";
     const result = transitionVim(this.snapshot, piInputToVimEvent(data));
     this.snapshot = result.snapshot;
+    this.syncCursorStyle();
 
     for (const action of result.actions) applyVimActionToPiEditor(action, this);
 
@@ -65,7 +69,7 @@ export class VimPiEditor extends CustomEditor {
     const lines = super.render(width);
     if (lines.length === 0) return lines;
 
-    if (getVimMode(this.snapshot) === "insert") renderInsertCursor(lines);
+    if (getVimMode(this.snapshot) === "insert") removeReverseVideoCursor(lines);
 
     const label = getVimModeLabel(this.snapshot);
     const last = lines.length - 1;
@@ -76,21 +80,32 @@ export class VimPiEditor extends CustomEditor {
     }
     return lines;
   }
+
+  restoreCursorStyle(): void {
+    this.cursorStyle = "block";
+    this.tui.terminal.write("\x1b[2 q");
+  }
+
+  /** Sync terminal cursor shape with Vim mode, avoiding duplicate escape writes. */
+  private syncCursorStyle(): void {
+    const style = getVimMode(this.snapshot) === "insert" ? "bar" : "block";
+    if (this.cursorStyle === style) {
+      return;
+    }
+    this.cursorStyle = style;
+    this.tui.terminal.write(style === "bar" ? "\x1b[6 q" : "\x1b[2 q");
+  }
 }
 
 const REVERSE_VIDEO_CURSOR = /\x1b\[7m([^\x1b]*)\x1b\[0m/;
 
-function renderInsertCursor(lines: string[]): void {
+/** Remove Pi's reverse-video cursor highlight when Insert mode uses the hardware bar cursor. */
+function removeReverseVideoCursor(lines: string[]): void {
   for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i]!;
-    if (!REVERSE_VIDEO_CURSOR.test(line)) continue;
-    lines[i] = line.replace(REVERSE_VIDEO_CURSOR, (_match, cursorText: string) => {
-      if (cursorText === " ") return "│";
-      return `│${cursorText}`;
-    });
-    if (visibleWidth(lines[i]!) > visibleWidth(line) && lines[i]!.endsWith(" ")) {
-      lines[i] = lines[i]!.slice(0, -1);
+    if (!REVERSE_VIDEO_CURSOR.test(lines[i])) {
+      continue;
     }
+    lines[i] = lines[i]!.replace(REVERSE_VIDEO_CURSOR, "$1");
     return;
   }
 }
