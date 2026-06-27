@@ -64,6 +64,17 @@ export class VimPiEditor extends CustomEditor {
       super.handleInput("\x1b[C");
   }
 
+  /** Move to the first column on the current line. */
+  moveCaretToLineStart(): void {
+    super.handleInput("\x01");
+  }
+
+  /** Move to the last Normal-mode character on the current line. */
+  moveCaretToLineEnd(): void {
+    super.handleInput("\x05");
+    this.clampNormalCursorColumn();
+  }
+
   /** Place the Insert caret after the current Normal-mode character. */
   placeCaretAfterCursor(): void {
     const { line, col } = this.getCursor();

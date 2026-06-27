@@ -6,6 +6,8 @@ export interface PiCursorActionTarget {
   moveCaretDown(): void;
   moveCaretUp(): void;
   moveCaretRight(): void;
+  moveCaretToLineStart(): void;
+  moveCaretToLineEnd(): void;
   placeCaretAfterCursor(): void;
   placeCaretAtLineEnd(): void;
   placeCaretAtFirstNonBlank(): void;
@@ -41,6 +43,12 @@ export function applyVimActionToPiEditor(
       return;
     case "moveCursorRight":
       editor.moveCaretRight();
+      return;
+    case "moveCursorToLineStart":
+      editor.moveCaretToLineStart();
+      return;
+    case "moveCursorToLineEnd":
+      editor.moveCaretToLineEnd();
       return;
   }
 }

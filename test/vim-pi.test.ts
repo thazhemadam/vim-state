@@ -83,6 +83,12 @@ test("Pi cursor actions apply initial Vim cursor rules", () => {
     moveCaretRight: () => {
       col += 1;
     },
+    moveCaretToLineStart: () => {
+      col = 0;
+    },
+    moveCaretToLineEnd: () => {
+      col = 4;
+    },
     placeCaretAfterCursor: () => {
       col += 1;
     },
@@ -109,9 +115,13 @@ test("Pi cursor actions apply initial Vim cursor rules", () => {
   assert.equal(target.getCursor().col, 2);
   applyVimActionToPiEditor({ type: "moveCursorLeft" }, target);
   assert.equal(target.getCursor().col, 1);
+  applyVimActionToPiEditor({ type: "moveCursorToLineEnd" }, target);
+  assert.equal(target.getCursor().col, 4);
+  applyVimActionToPiEditor({ type: "moveCursorToLineStart" }, target);
+  assert.equal(target.getCursor().col, 0);
 
   applyVimActionToPiEditor({ type: "placeCaretAfterCursor" }, target);
-  assert.equal(target.getCursor().col, 2);
+  assert.equal(target.getCursor().col, 1);
   applyVimActionToPiEditor({ type: "placeCaretAtLineEnd" }, target);
   assert.equal(target.getCursor().col, 4);
   applyVimActionToPiEditor({ type: "placeCaretAtFirstNonBlank" }, target);
@@ -145,6 +155,10 @@ test("VimPiEditor applies Normal-mode hjkl navigation", () => {
 
   for (const key of ["h", "h", "h", "l"]) editor.handleInput(key);
   assert.deepEqual(editor.getCursor(), { line: 0, col: 1 });
+  editor.handleInput("$");
+  assert.deepEqual(editor.getCursor(), { line: 0, col: 2 });
+  editor.handleInput("0");
+  assert.deepEqual(editor.getCursor(), { line: 0, col: 0 });
 
   const verticalEditor = createEditor();
   verticalEditor.setText("ab\ncd");
