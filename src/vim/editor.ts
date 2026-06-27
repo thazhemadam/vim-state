@@ -8,6 +8,7 @@ export interface VimEditor {
   moveCursorToLineStart(): void;
   moveCursorToLineEnd(): void;
   moveCursorToFirstNonBlank(): void;
+  moveCursorToNextWord(): void;
   insertLineBelow(): void;
   insertLineAbove(): void;
   placeCaretAtLineStart(): void;
