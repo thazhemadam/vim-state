@@ -73,9 +73,8 @@ export class VimPiEditor extends CustomEditor implements VimActionHandler {
 
   /** Move right only while another character exists under the Normal-mode cursor. */
   moveCursorRight(): void {
-    const { line, col } = this.getCursor();
-    if (col < normalMaxColumn(this.getLines()[line] ?? ""))
-      super.handleInput(ARROW_RIGHT);
+    const { col } = this.getCursor();
+    if (col < normalMaxColumn(this.currentLine)) super.handleInput(ARROW_RIGHT);
   }
 
   /** Move to the first column on the current line. */
@@ -91,9 +90,7 @@ export class VimPiEditor extends CustomEditor implements VimActionHandler {
 
   /** Move to the first non-blank character on the current line. */
   moveCursorToFirstNonBlank(): void {
-    this.moveCaretToColumn(
-      firstNonBlankColumn(this.getLines()[this.getCursor().line] ?? ""),
-    );
+    this.moveCaretToColumn(firstNonBlankColumn(this.currentLine));
   }
 
   /** Insert an empty line below the current line and leave the caret on it. */
@@ -116,9 +113,8 @@ export class VimPiEditor extends CustomEditor implements VimActionHandler {
 
   /** Place the Insert caret after the current Normal-mode character. */
   placeCaretAfterCursor(): void {
-    const { line, col } = this.getCursor();
-    if (col < (this.getLines()[line] ?? "").length)
-      super.handleInput(ARROW_RIGHT);
+    const { col } = this.getCursor();
+    if (col < this.currentLine.length) super.handleInput(ARROW_RIGHT);
   }
 
   /** Place the Insert caret at the end of the current line. */
@@ -128,28 +124,24 @@ export class VimPiEditor extends CustomEditor implements VimActionHandler {
 
   /** Delete the Normal-mode character under the cursor without crossing lines. */
   deleteCharUnderCursor(): void {
-    const { line, col } = this.getCursor();
-    if (col < (this.getLines()[line] ?? "").length)
-      super.handleInput(DELETE_FORWARD);
+    const { col } = this.getCursor();
+    if (col < this.currentLine.length) super.handleInput(DELETE_FORWARD);
   }
 
   /** Delete the character before the Normal-mode cursor without crossing lines. */
   deleteCharBeforeCursor(): void {
-    const { line, col } = this.getCursor();
+    const { col } = this.getCursor();
     if (col === 0) return;
 
     super.handleInput(DELETE_BACKWARD);
 
-    const targetCol = Math.min(col, (this.getLines()[line] ?? "").length);
+    const targetCol = Math.min(col, this.currentLine.length);
     while (this.getCursor().col < targetCol) super.handleInput(ARROW_RIGHT);
   }
 
   /** Move left until the Normal-mode cursor sits on a character, or column 0 for an empty line. */
   clampCursorColumn(): void {
-    while (
-      this.getCursor().col >
-      normalMaxColumn(this.getLines()[this.getCursor().line] ?? "")
-    ) {
+    while (this.getCursor().col > normalMaxColumn(this.currentLine)) {
       super.handleInput(ARROW_LEFT);
     }
   }
@@ -206,6 +198,11 @@ export class VimPiEditor extends CustomEditor implements VimActionHandler {
       (this.getText().length === 0 &&
         this.appKeybindings.matches(data, "app.exit"))
     );
+  }
+
+  /** Current logical line, or empty text if the base editor ever reports an invalid cursor line. */
+  private get currentLine(): string {
+    return this.getLines()[this.getCursor().line] ?? "";
   }
 
   /** Sync terminal cursor shape with Vim mode, avoiding duplicate escape writes. */
