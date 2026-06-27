@@ -59,6 +59,11 @@ test("Pi cursor actions apply initial Vim cursor rules", () => {
     moveCaretLeft: () => {
       col -= 1;
     },
+    moveCaretDown: () => {},
+    moveCaretUp: () => {},
+    moveCaretRight: () => {
+      col += 1;
+    },
   });
 
   let target = cursorTarget(0);
@@ -70,6 +75,11 @@ test("Pi cursor actions apply initial Vim cursor rules", () => {
   assert.equal(target.getCursor().col, 1);
 
   applyVimActionToPiEditor({ type: "placeCaretBeforeCursor" }, target);
+  assert.equal(target.getCursor().col, 1);
+
+  applyVimActionToPiEditor({ type: "moveCursorRight" }, target);
+  assert.equal(target.getCursor().col, 2);
+  applyVimActionToPiEditor({ type: "moveCursorLeft" }, target);
   assert.equal(target.getCursor().col, 1);
 });
 
@@ -90,6 +100,23 @@ test("Pi extension installs a Vim editor", () => {
   } as never);
 
   assert.equal(typeof installedFactory, "function");
+});
+
+test("VimPiEditor applies Normal-mode hjkl navigation", () => {
+  const editor = createEditor();
+
+  for (const key of ["a", "b", "c", "\x1b", "h", "h", "h", "l"]) editor.handleInput(key);
+
+  assert.deepEqual(editor.getCursor(), { line: 0, col: 1 });
+
+  const verticalEditor = createEditor();
+  verticalEditor.setText("ab\ncd");
+  verticalEditor.handleInput("\x1b");
+  assert.deepEqual(verticalEditor.getCursor(), { line: 1, col: 1 });
+  verticalEditor.handleInput("k");
+  assert.deepEqual(verticalEditor.getCursor(), { line: 0, col: 1 });
+  verticalEditor.handleInput("j");
+  assert.deepEqual(verticalEditor.getCursor(), { line: 1, col: 1 });
 });
 
 test("VimPiEditor delegates insert input and ignores normal printable keys", () => {

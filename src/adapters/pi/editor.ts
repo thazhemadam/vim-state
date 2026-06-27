@@ -43,6 +43,21 @@ export class VimPiEditor extends CustomEditor {
     super.handleInput("\x1b[D");
   }
 
+  /** Move down, then clamp because Vim Normal mode cannot rest past the last character. */
+  moveCaretDown(): void {
+    super.handleInput("\x1b[B");
+  }
+
+  /** Move up, then clamp because target lines may be shorter than the source line. */
+  moveCaretUp(): void {
+    super.handleInput("\x1b[A");
+  }
+
+  /** Move right only while another character exists under the Normal-mode cursor. */
+  moveCaretRight(): void {
+    super.handleInput("\x1b[C");
+  }
+
   handleInput(data: string): void {
     const wasInsert = getVimMode(this.snapshot) === "insert";
     const result = transitionVim(this.snapshot, piInputToVimEvent(data));
