@@ -14,7 +14,7 @@ import {
 import type { VimEditor } from "../../vim/editor.js";
 import { vimMachine, type VimSnapshot } from "../../vim/machine.js";
 import { getVimMode, getVimModeLabel } from "../../vim/selectors.js";
-import { piInputToVimEvent } from "./keymap.js";
+import { isPrintablePiInput, piInputToVimEvent } from "./keymap.js";
 
 /** Terminal/control key bytes forwarded to the base CustomEditor. */
 const ARROW_LEFT = "\x1b[D";
@@ -145,18 +145,22 @@ export class VimPiEditor extends CustomEditor implements VimEditor {
   }
 
   handleInput(data: string): void {
-    const wasInsert = getVimMode(this.vimSnapshot) === "insert";
+    const previousMode = getVimMode(this.vimSnapshot);
     this.vim.send(piInputToVimEvent(data));
     this.syncCursorStyle();
 
+    const mode = getVimMode(this.vimSnapshot);
     // If you were in Insert mode and are still in Insert mode,
     // then pass the data to the underlying Pi editor.
-    if (wasInsert && getVimMode(this.vimSnapshot) === "insert") {
+    if (previousMode === "insert" && mode === "insert") {
       super.handleInput(data);
     } else if (
-      getVimMode(this.vimSnapshot) === "normal" &&
-      this.isAppShortcutInput(data)
+      previousMode === "replace" &&
+      mode === "replace" &&
+      isPrintablePiInput(data)
     ) {
+      super.handleInput(data);
+    } else if (mode === "normal" && this.isAppShortcutInput(data)) {
       super.handleInput(data);
     }
 

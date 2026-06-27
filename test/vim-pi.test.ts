@@ -278,6 +278,21 @@ test("VimPiEditor applies Normal-mode o O open-line insert entry", () => {
   assert.equal(getVimMode(aboveEditor.vimSnapshot), "insert");
 });
 
+test("VimPiEditor applies Normal-mode R replace entry", () => {
+  const editor = createEditor();
+  for (const key of ["a", "b", "c", "\x1b", "0", "R", "X", "Y"])
+    editor.handleInput(key);
+
+  assert.equal(editor.getText(), "XYc");
+  assert.deepEqual(editor.getCursor(), { line: 0, col: 2 });
+  assert.equal(getVimMode(editor.vimSnapshot), "replace");
+  assert.match(editor.render(40).at(-1) ?? "", /-- REPLACE --$/);
+
+  editor.handleInput("\x1b");
+  assert.equal(getVimMode(editor.vimSnapshot), "normal");
+  assert.deepEqual(editor.getCursor(), { line: 0, col: 1 });
+});
+
 test("VimPiEditor delegates insert input and ignores unmapped normal printable keys", () => {
   const editor = createEditor();
 
