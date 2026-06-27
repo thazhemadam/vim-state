@@ -64,6 +64,25 @@ export class VimPiEditor extends CustomEditor {
       super.handleInput("\x1b[C");
   }
 
+  /** Place the Insert caret after the current Normal-mode character. */
+  placeCaretAfterCursor(): void {
+    const { line, col } = this.getCursor();
+    if (col < (this.getLines()[line] ?? "").length) super.handleInput("\x1b[C");
+  }
+
+  /** Place the Insert caret at the end of the current line. */
+  placeCaretAtLineEnd(): void {
+    super.handleInput("\x05");
+  }
+
+  /** Place the Insert caret before the first non-blank character on the current line. */
+  placeCaretAtFirstNonBlank(): void {
+    const { line } = this.getCursor();
+    const column = firstNonBlankColumn(this.getLines()[line] ?? "");
+    super.handleInput("\x01");
+    for (let i = 0; i < column; i += 1) super.handleInput("\x1b[C");
+  }
+
   handleInput(data: string): void {
     const wasInsert = getVimMode(this.snapshot) === "insert";
     const result = transitionVim(this.snapshot, piInputToVimEvent(data));
@@ -142,6 +161,12 @@ export class VimPiEditor extends CustomEditor {
 /** Last valid Normal-mode cursor column for a line; empty lines stay at column 0. */
 function normalMaxColumn(line: string): number {
   return Math.max(line.length - 1, 0);
+}
+
+/** Column of the first non-blank character, or 0 for blank/empty lines. */
+function firstNonBlankColumn(line: string): number {
+  const match = /\S/.exec(line);
+  return match?.index ?? 0;
 }
 
 const REVERSE_VIDEO_CURSOR = /\x1b\[7m([^\x1b]*)\x1b\[0m/;

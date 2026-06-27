@@ -81,6 +81,15 @@ test("Pi cursor actions apply initial Vim cursor rules", () => {
     moveCaretRight: () => {
       col += 1;
     },
+    placeCaretAfterCursor: () => {
+      col += 1;
+    },
+    placeCaretAtLineEnd: () => {
+      col = 4;
+    },
+    placeCaretAtFirstNonBlank: () => {
+      col = 2;
+    },
   });
 
   let target = cursorTarget(0);
@@ -98,6 +107,13 @@ test("Pi cursor actions apply initial Vim cursor rules", () => {
   assert.equal(target.getCursor().col, 2);
   applyVimActionToPiEditor({ type: "moveCursorLeft" }, target);
   assert.equal(target.getCursor().col, 1);
+
+  applyVimActionToPiEditor({ type: "placeCaretAfterCursor" }, target);
+  assert.equal(target.getCursor().col, 2);
+  applyVimActionToPiEditor({ type: "placeCaretAtLineEnd" }, target);
+  assert.equal(target.getCursor().col, 4);
+  applyVimActionToPiEditor({ type: "placeCaretAtFirstNonBlank" }, target);
+  assert.equal(target.getCursor().col, 2);
 });
 
 test("Pi extension installs a Vim editor", () => {
@@ -169,6 +185,28 @@ test("VimPiEditor passes configured app shortcuts through in Normal mode", () =>
   assert.equal(interrupted, true);
   assert.equal(cleared, true);
   assert.equal(editor.getText(), "");
+});
+
+test("VimPiEditor applies Normal-mode a A I insert entry", () => {
+  const appendEditor = createEditor();
+  for (const key of ["a", "b", "c", "\x1b", "a", "X"])
+    appendEditor.handleInput(key);
+  assert.equal(appendEditor.getText(), "abcX");
+  assert.deepEqual(appendEditor.getCursor(), { line: 0, col: 4 });
+
+  const lineEndEditor = createEditor();
+  for (const key of ["a", "b", "c", "\x1b", "h", "A", "X"])
+    lineEndEditor.handleInput(key);
+  assert.equal(lineEndEditor.getText(), "abcX");
+  assert.deepEqual(lineEndEditor.getCursor(), { line: 0, col: 4 });
+
+  const firstNonBlankEditor = createEditor();
+  firstNonBlankEditor.setText("  abc");
+  firstNonBlankEditor.handleInput("\x1b");
+  firstNonBlankEditor.handleInput("I");
+  firstNonBlankEditor.handleInput("X");
+  assert.equal(firstNonBlankEditor.getText(), "  Xabc");
+  assert.deepEqual(firstNonBlankEditor.getCursor(), { line: 0, col: 3 });
 });
 
 test("VimPiEditor delegates insert input and ignores normal printable keys", () => {
