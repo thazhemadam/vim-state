@@ -68,6 +68,25 @@ test("Vim core emits Normal-mode cursor actions", () => {
   }
 });
 
+test("Vim core emits Normal-mode character deletion actions", () => {
+  let result = getInitialVimSnapshot();
+  result = transitionVim(result.snapshot, { type: "KEY", key: "escape" });
+
+  result = transitionVim(result.snapshot, { type: "KEY", key: "x" });
+  assert.equal(getVimMode(result.snapshot), "normal");
+  assert.deepEqual(result.actions, [
+    { type: "deleteCharUnderCursor" },
+    { type: "clampCursorColumn" },
+  ]);
+
+  result = transitionVim(result.snapshot, { type: "KEY", key: "X" });
+  assert.equal(getVimMode(result.snapshot), "normal");
+  assert.deepEqual(result.actions, [
+    { type: "deleteCharBeforeCursor" },
+    { type: "moveCursorLeft" },
+  ]);
+});
+
 test("Pi keymap normalizes raw input into Vim keys", () => {
   assert.equal(normalizePiKey("\x1b"), "escape");
   assert.equal(normalizePiKey("i"), "i");
@@ -89,6 +108,9 @@ test("Vim action dispatcher calls matching handler method", () => {
     insertLineBelow: () => calls.push("insertLineBelow"),
     insertLineAbove: () => calls.push("insertLineAbove"),
     placeCaretAtLineStart: () => calls.push("placeCaretAtLineStart"),
+    deleteCharUnderCursor: () => calls.push("deleteCharUnderCursor"),
+    deleteCharBeforeCursor: () => calls.push("deleteCharBeforeCursor"),
+    clampCursorColumn: () => calls.push("clampCursorColumn"),
   };
 
   applyVimAction({ type: "moveCursorRight" }, handler);

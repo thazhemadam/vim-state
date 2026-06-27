@@ -1,6 +1,9 @@
 import { setup } from "xstate";
 
 import {
+  CLAMP_CURSOR_COLUMN,
+  DELETE_CHAR_BEFORE_CURSOR,
+  DELETE_CHAR_UNDER_CURSOR,
   MOVE_CURSOR_DOWN,
   MOVE_CURSOR_LEFT,
   MOVE_CURSOR_RIGHT,
@@ -113,6 +116,20 @@ export const vimMachine = setup({
           {
             guard: { type: "keyIs", params: { key: "_" } },
             actions: { type: MOVE_CURSOR_TO_FIRST_NON_BLANK },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "x" } },
+            actions: [
+              { type: DELETE_CHAR_UNDER_CURSOR },
+              { type: CLAMP_CURSOR_COLUMN },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "X" } },
+            actions: [
+              { type: DELETE_CHAR_BEFORE_CURSOR },
+              { type: MOVE_CURSOR_LEFT },
+            ],
           },
         ],
       },
