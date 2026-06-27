@@ -3,7 +3,6 @@ export { VimPiEditor } from "./adapters/pi/editor.js";
 export { applyVimActionToPiEditor } from "./adapters/pi/apply-action.js";
 export {
   isPrintablePiInput,
-  isSingleControlPiInput,
   normalizePiKey,
   piInputToVimEvent,
 } from "./adapters/pi/keymap.js";

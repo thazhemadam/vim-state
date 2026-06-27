@@ -17,11 +17,12 @@ import {
   type VimSnapshot,
 } from "../../vim/transition.js";
 import { applyVimActionToPiEditor } from "./apply-action.js";
-import { isSingleControlPiInput, piInputToVimEvent } from "./keymap.js";
+import { piInputToVimEvent } from "./keymap.js";
 
 export class VimPiEditor extends CustomEditor {
   private snapshot: VimSnapshot = getInitialVimSnapshot().snapshot;
   private cursorStyle: "bar" | "block" | undefined;
+  private readonly appKeybindings: KeybindingsManager;
 
   constructor(
     tui: TUI,
@@ -30,6 +31,7 @@ export class VimPiEditor extends CustomEditor {
     options?: EditorOptions,
   ) {
     super(tui, theme, keybindings, options);
+    this.appKeybindings = keybindings;
     this.tui.setShowHardwareCursor(true);
     this.syncCursorStyle();
   }
@@ -76,7 +78,7 @@ export class VimPiEditor extends CustomEditor {
       super.handleInput(data);
     } else if (
       getVimMode(this.snapshot) === "normal" &&
-      isSingleControlPiInput(data)
+      this.isAppShortcutInput(data)
     ) {
       super.handleInput(data);
     }
@@ -103,6 +105,17 @@ export class VimPiEditor extends CustomEditor {
   restoreCursorStyle(): void {
     this.cursorStyle = "block";
     this.tui.terminal.write("\x1b[2 q");
+  }
+
+  /** Return true when input matches a Pi app-level shortcut that should not edit text. */
+  private isAppShortcutInput(data: string): boolean {
+    return (
+      this.appKeybindings.matches(data, "app.interrupt") ||
+      this.appKeybindings.matches(data, "app.clear") ||
+      this.appKeybindings.matches(data, "app.suspend") ||
+      (this.getText().length === 0 &&
+        this.appKeybindings.matches(data, "app.exit"))
+    );
   }
 
   /** Sync terminal cursor shape with Vim mode, avoiding duplicate escape writes. */

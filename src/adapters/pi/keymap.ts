@@ -18,11 +18,3 @@ export function isPrintablePiInput(data: string): boolean {
       data.charCodeAt(0) !== 127)
   );
 }
-
-/**
- * Check whether a given string represents a one-byte ASCII control input
- * such as Ctrl+C or Ctrl+D.
- */
-export function isSingleControlPiInput(data: string): boolean {
-  return data.length === 1 && data.charCodeAt(0) < 32;
-}

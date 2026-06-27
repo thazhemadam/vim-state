@@ -3,6 +3,8 @@ import test from "node:test";
 
 import vimPiExtension, { VimPiEditor } from "../src/index.js";
 import { applyVimActionToPiEditor } from "../src/adapters/pi/apply-action.js";
+import { matchesKey } from "@earendil-works/pi-tui";
+
 import { normalizePiKey } from "../src/adapters/pi/keymap.js";
 import { getVimMode } from "../src/vim/selectors.js";
 import {
@@ -51,6 +53,7 @@ test("Vim core emits Normal-mode hjkl cursor actions", () => {
 test("Pi keymap normalizes raw input into Vim keys", () => {
   assert.equal(normalizePiKey("\x1b"), "escape");
   assert.equal(normalizePiKey("i"), "i");
+  assert.equal(normalizePiKey("\x1b[99;5u"), "ctrl+c");
 });
 
 test("Pi cursor actions apply initial Vim cursor rules", () => {
@@ -128,6 +131,32 @@ test("VimPiEditor applies Normal-mode hjkl navigation", () => {
   assert.deepEqual(shortLineEditor.getCursor(), { line: 0, col: 0 });
 });
 
+test("VimPiEditor passes configured app shortcuts through in Normal mode", () => {
+  let interrupted = false;
+  let cleared = false;
+  const editor = createEditor(
+    [],
+    (data, action) =>
+      (action === "app.interrupt" && matchesKey(data, "escape")) ||
+      (action === "app.clear" && matchesKey(data, "ctrl+c")),
+  );
+  editor.onEscape = () => {
+    interrupted = true;
+  };
+  editor.onAction("app.clear", () => {
+    cleared = true;
+  });
+
+  editor.handleInput("\x1b");
+  editor.handleInput("\x1b");
+  editor.handleInput("\x1b[99;5u");
+  editor.handleInput("\x17");
+
+  assert.equal(interrupted, true);
+  assert.equal(cleared, true);
+  assert.equal(editor.getText(), "");
+});
+
 test("VimPiEditor delegates insert input and ignores normal printable keys", () => {
   const editor = createEditor();
 
@@ -156,14 +185,17 @@ test("VimPiEditor uses hardware bar cursor in insert and fake block cursor in no
   assert.match(editor.render(40).join("\n"), /\x1b\[7mc\x1b\[0m/);
 });
 
-function createEditor(writes: string[] = []): VimPiEditor {
+function createEditor(
+  writes: string[] = [],
+  matches: (data: string, action: string) => boolean = () => false,
+): VimPiEditor {
   const fakeTui = {
     terminal: { rows: 24, write: (data: string) => writes.push(data) },
     requestRender: () => {},
     setShowHardwareCursor: () => {},
   };
   const fakeTheme = { borderColor: (value: string) => value, selectList: {} };
-  const fakeKeybindings = { matches: () => false };
+  const fakeKeybindings = { matches };
   return new VimPiEditor(
     fakeTui as never,
     fakeTheme as never,
