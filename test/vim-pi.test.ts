@@ -181,6 +181,21 @@ test("VimPiEditor applies Normal-mode hjkl navigation", () => {
   assert.deepEqual(shortLineEditor.getCursor(), { line: 1, col: 4 });
   shortLineEditor.handleInput("k");
   assert.deepEqual(shortLineEditor.getCursor(), { line: 0, col: 0 });
+
+  const horizontalBoundaryEditor = createEditor();
+  horizontalBoundaryEditor.setText("ab\ncd");
+  horizontalBoundaryEditor.handleInput("\x1b");
+  assert.deepEqual(horizontalBoundaryEditor.getCursor(), { line: 1, col: 1 });
+  horizontalBoundaryEditor.handleInput("l");
+  assert.deepEqual(horizontalBoundaryEditor.getCursor(), { line: 1, col: 1 });
+  horizontalBoundaryEditor.handleInput("0");
+  horizontalBoundaryEditor.handleInput("h");
+  assert.deepEqual(horizontalBoundaryEditor.getCursor(), { line: 1, col: 0 });
+  horizontalBoundaryEditor.handleInput("k");
+  horizontalBoundaryEditor.handleInput("l");
+  assert.deepEqual(horizontalBoundaryEditor.getCursor(), { line: 0, col: 1 });
+  horizontalBoundaryEditor.handleInput("l");
+  assert.deepEqual(horizontalBoundaryEditor.getCursor(), { line: 0, col: 1 });
 });
 
 test("VimPiEditor passes configured app shortcuts through in Normal mode", () => {

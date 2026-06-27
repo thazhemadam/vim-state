@@ -40,8 +40,9 @@ export class VimPiEditor extends CustomEditor implements VimActionHandler {
     return this.snapshot;
   }
 
-  /** Move one column left using Pi's caret model. Normal-mode left already clamps at 0. */
+  /** Move one column left without crossing to the previous line. */
   moveCursorLeft(): void {
+    if (this.getCursor().col === 0) return;
     super.handleInput("\x1b[D");
   }
 
