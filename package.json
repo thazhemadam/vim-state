@@ -19,7 +19,9 @@
   },
   "scripts": {
     "check": "tsc --noEmit",
-    "test": "tsx --test test/**/*.test.ts"
+    "test": "tsx --test test/**/*.test.ts",
+    "dev:pi": "PI_CODING_AGENT_DIR=$PWD/.pi-dev/agent PI_CODING_AGENT_SESSION_DIR=$PWD/.pi-dev/sessions pi --no-extensions -e .",
+    "dev:pi:clean": "rm -rf .pi-dev"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
