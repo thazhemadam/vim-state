@@ -1,16 +1,15 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+export { default } from "./adapters/pi/extension.js";
+export { VimPiEditor } from "./adapters/pi/editor.js";
+export { applyVimActionToPiEditor } from "./adapters/pi/apply-action.js";
+export {
+  isPrintablePiInput,
+  isSingleControlPiInput,
+  normalizePiKey,
+  piInputToVimEvent,
+} from "./adapters/pi/keymap.js";
 
-/**
- * Pi extension entrypoint.
- *
- * The Vim modal editor itself will live under src/vim/ and will be wired into
- * Pi's CustomEditor API from this module once the transition engine exists.
- */
-export default function vimPiExtension(pi: ExtensionAPI): void {
-  pi.registerCommand("vim-pi-status", {
-    description: "Show vim-pi extension status",
-    handler: async (_args, ctx) => {
-      ctx.ui.notify("vim-pi scaffold loaded; modal editor not implemented yet.", "info");
-    },
-  });
-}
+export * from "./vim/actions.js";
+export * from "./vim/events.js";
+export * from "./vim/selectors.js";
+export * from "./vim/state.js";
+export * from "./vim/transition.js";
