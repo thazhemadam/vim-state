@@ -105,8 +105,10 @@ test("Pi extension installs a Vim editor", () => {
 test("VimPiEditor applies Normal-mode hjkl navigation", () => {
   const editor = createEditor();
 
-  for (const key of ["a", "b", "c", "\x1b", "h", "h", "h", "l"]) editor.handleInput(key);
+  for (const key of ["a", "b", "c", "\x1b", "l"]) editor.handleInput(key);
+  assert.deepEqual(editor.getCursor(), { line: 0, col: 2 });
 
+  for (const key of ["h", "h", "h", "l"]) editor.handleInput(key);
   assert.deepEqual(editor.getCursor(), { line: 0, col: 1 });
 
   const verticalEditor = createEditor();
@@ -117,6 +119,13 @@ test("VimPiEditor applies Normal-mode hjkl navigation", () => {
   assert.deepEqual(verticalEditor.getCursor(), { line: 0, col: 1 });
   verticalEditor.handleInput("j");
   assert.deepEqual(verticalEditor.getCursor(), { line: 1, col: 1 });
+
+  const shortLineEditor = createEditor();
+  shortLineEditor.setText("x\nhello");
+  shortLineEditor.handleInput("\x1b");
+  assert.deepEqual(shortLineEditor.getCursor(), { line: 1, col: 4 });
+  shortLineEditor.handleInput("k");
+  assert.deepEqual(shortLineEditor.getCursor(), { line: 0, col: 0 });
 });
 
 test("VimPiEditor delegates insert input and ignores normal printable keys", () => {

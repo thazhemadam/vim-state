@@ -46,16 +46,20 @@ export class VimPiEditor extends CustomEditor {
   /** Move down, then clamp because Vim Normal mode cannot rest past the last character. */
   moveCaretDown(): void {
     super.handleInput("\x1b[B");
+    this.clampNormalCursorColumn();
   }
 
   /** Move up, then clamp because target lines may be shorter than the source line. */
   moveCaretUp(): void {
     super.handleInput("\x1b[A");
+    this.clampNormalCursorColumn();
   }
 
   /** Move right only while another character exists under the Normal-mode cursor. */
   moveCaretRight(): void {
-    super.handleInput("\x1b[C");
+    const { line, col } = this.getCursor();
+    if (col < normalMaxColumn(this.getLines()[line] ?? ""))
+      super.handleInput("\x1b[C");
   }
 
   handleInput(data: string): void {
@@ -110,6 +114,21 @@ export class VimPiEditor extends CustomEditor {
     this.cursorStyle = style;
     this.tui.terminal.write(style === "bar" ? "\x1b[6 q" : "\x1b[2 q");
   }
+
+  /** Reuse Pi left-arrow handling until the caret is back on a valid Normal-mode character. */
+  private clampNormalCursorColumn(): void {
+    while (
+      this.getCursor().col >
+      normalMaxColumn(this.getLines()[this.getCursor().line] ?? "")
+    ) {
+      super.handleInput("\x1b[D");
+    }
+  }
+}
+
+/** Last valid Normal-mode cursor column for a line; empty lines stay at column 0. */
+function normalMaxColumn(line: string): number {
+  return Math.max(line.length - 1, 0);
 }
 
 const REVERSE_VIDEO_CURSOR = /\x1b\[7m([^\x1b]*)\x1b\[0m/;
