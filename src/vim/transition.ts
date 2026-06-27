@@ -17,6 +17,7 @@ export interface VimTransitionResult {
 
 interface XStateActionLike {
   type: string;
+  params?: unknown;
 }
 
 export function getInitialVimSnapshot(): VimTransitionResult {
@@ -42,7 +43,7 @@ export function transitionVim(
 
 function collectVimActions(actions: readonly XStateActionLike[]): VimAction[] {
   return actions.flatMap((action) => {
-    const vimAction = toVimAction(action.type);
+    const vimAction = toVimAction(action.type, action.params);
     return vimAction ? [vimAction] : [];
   });
 }

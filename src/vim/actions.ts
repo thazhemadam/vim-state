@@ -41,9 +41,19 @@ export const [
 ] = VIM_ACTION_TYPES;
 
 export type VimActionType = (typeof VIM_ACTION_TYPES)[number];
-export type VimAction = { type: VimActionType };
+export type VimActionPayloads = Record<never, never>;
 
-export interface VimActionHandler extends Record<VimActionType, () => void> {}
+export type VimAction = {
+  [K in VimActionType]: K extends keyof VimActionPayloads
+    ? { type: K; payload: VimActionPayloads[K] }
+    : { type: K };
+}[VimActionType];
+
+export type VimActionHandler = {
+  [K in VimActionType]: K extends keyof VimActionPayloads
+    ? (payload: VimActionPayloads[K]) => void
+    : () => void;
+};
 
 const vimActionTypeSet = new Set<string>(VIM_ACTION_TYPES);
 
@@ -54,7 +64,10 @@ export function applyVimAction(
   handler[action.type]();
 }
 
-export function toVimAction(type: string): VimAction | undefined {
+export function toVimAction(
+  type: string,
+  _params?: unknown,
+): VimAction | undefined {
   return isVimActionType(type) ? { type } : undefined;
 }
 
