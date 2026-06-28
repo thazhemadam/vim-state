@@ -18,6 +18,16 @@ class FakeHost implements VimEditorHost {
 
   sendInputToEditor(data: string): void {
     this.inputs.push(data);
+
+    if (data === "\x01") {
+      this.cursor.col = 0;
+    }
+    if (data === "\x1b[C") {
+      this.cursor.col += 1;
+    }
+    if (data === "\x1b[D") {
+      this.cursor.col = Math.max(0, this.cursor.col - 1);
+    }
   }
 }
 
@@ -27,8 +37,8 @@ test("VimEditor mixin forwards semantic edits to the host editor", () => {
   const editor = new FakeVimEditor();
 
   editor.move("left");
-  editor.delete("charUnderCursor");
+  editor.delete("right");
 
-  assert.deepEqual(editor.inputs, ["\x1b[D", "\x01", "\x1b[C", "\x1b[3~"]);
+  assert.deepEqual(editor.inputs, ["\x01", "\x01", "\x1b[3~"]);
   assert.deepEqual(editor.lines, ["abc"]);
 });

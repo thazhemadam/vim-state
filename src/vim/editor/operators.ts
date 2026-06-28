@@ -1,50 +1,141 @@
 import { DELETE_FORWARD } from "./constants.js";
-import type { VimDeleteTarget, VimEditorHost, VimRange } from "./types.js";
+import type {
+  VimEditorHost,
+  VimMotionResult,
+  VimNoun,
+  VimPosition,
+  VimRange,
+} from "./types.js";
 import {
   currentLine,
   cursor,
+  endOfWordPosition,
+  firstNonBlankColumn,
   moveCursorToPosition,
   nextWordPosition,
+  normalMaxColumn,
+  previousWordPosition,
 } from "./utils.js";
 
-/** Convert a supported delete target into the concrete buffer range it affects. */
-export function deleteRange(
+/**
+ * Resolve a motion/text noun into both pieces consumers need:
+ * - `destination` for plain Normal-mode movement
+ * - `range` for operators such as delete
+ */
+export function resolveMotion(
   editor: VimEditorHost,
-  target: VimDeleteTarget,
-): VimRange | undefined {
+  noun: VimNoun,
+): VimMotionResult | undefined {
   const start = cursor(editor);
+  const line = currentLine(editor);
 
-  switch (target) {
-    case "charUnderCursor":
-      if (start.col >= currentLine(editor).length) {
+  switch (noun) {
+    case "left": {
+      if (start.col === 0) {
+        return undefined;
+      }
+      const destination = { line: start.line, col: start.col - 1 };
+      return {
+        range: { type: "charwise", start: destination, end: start },
+        destination,
+      };
+    }
+
+    case "right": {
+      if (line.length === 0) {
+        return undefined;
+      }
+      const end = { line: start.line, col: start.col + 1 };
+      return {
+        range: { type: "charwise", start, end },
+        destination: {
+          line: start.line,
+          col: Math.min(end.col, normalMaxColumn(line)),
+        },
+      };
+    }
+
+    case "down": {
+      const line = start.line + 1;
+      if (line >= editor.getLines().length) {
         return undefined;
       }
       return {
-        type: "charwise",
-        start,
-        end: { line: start.line, col: start.col + 1 },
+        range: { type: "linewise", startLine: start.line, endLine: line },
+        destination: clampedPosition(editor, { line, col: start.col }),
       };
-    case "charBeforeCursor":
-      if (start.col === 0) return undefined;
+    }
+
+    case "up": {
+      const line = start.line - 1;
+      if (line < 0) {
+        return undefined;
+      }
       return {
-        type: "charwise",
-        start: { line: start.line, col: start.col - 1 },
-        end: start,
+        range: { type: "linewise", startLine: line, endLine: start.line },
+        destination: clampedPosition(editor, { line, col: start.col }),
       };
-    case "nextWord":
+    }
+
+    case "lineStart": {
+      const destination = { line: start.line, col: 0 };
       return {
-        type: "charwise",
-        start,
-        end: nextWordPosition(editor.getLines(), start),
+        range: normalizedCharRange(start, destination),
+        destination,
       };
+    }
+
     case "lineEnd":
       return {
-        type: "charwise",
-        start,
-        end: { line: start.line, col: currentLine(editor).length },
+        range: {
+          type: "charwise",
+          start,
+          end: { line: start.line, col: line.length },
+        },
+        destination: { line: start.line, col: normalMaxColumn(line) },
       };
+
+    case "firstNonBlank": {
+      const destination = { line: start.line, col: firstNonBlankColumn(line) };
+      return {
+        range: normalizedCharRange(start, destination),
+        destination,
+      };
+    }
+
+    case "nextWord": {
+      const destination = nextWordPosition(editor.getLines(), start);
+      return {
+        range: { type: "charwise", start, end: destination },
+        destination,
+      };
+    }
+
+    case "previousWord": {
+      const destination = previousWordPosition(editor.getLines(), start);
+      return {
+        range: normalizedCharRange(start, destination),
+        destination,
+      };
+    }
+
+    case "endOfWord": {
+      const destination = endOfWordPosition(editor.getLines(), start);
+      return {
+        range: {
+          type: "charwise",
+          start,
+          end: { line: destination.line, col: destination.col + 1 },
+        },
+        destination,
+      };
+    }
+
     case "line":
-      return { type: "linewise", startLine: start.line, endLine: start.line };
+      return {
+        range: { type: "linewise", startLine: start.line, endLine: start.line },
+        destination: { line: start.line, col: 0 },
+      };
   }
 }
 
@@ -70,6 +161,32 @@ export function applyDeleteRange(editor: VimEditorHost, range: VimRange): void {
   }
 }
 
+/** Clamp a requested destination to a valid Normal-mode cursor column. */
+function clampedPosition(
+  editor: VimEditorHost,
+  position: VimPosition,
+): VimPosition {
+  return {
+    line: position.line,
+    col: Math.min(
+      position.col,
+      normalMaxColumn(editor.getLines()[position.line] ?? ""),
+    ),
+  };
+}
+
+/** Return a forward charwise range even when the motion destination is before the cursor. */
+function normalizedCharRange(start: VimPosition, end: VimPosition): VimRange {
+  if (
+    start.line < end.line ||
+    (start.line === end.line && start.col <= end.col)
+  ) {
+    return { type: "charwise", start, end };
+  }
+
+  return { type: "charwise", start: end, end: start };
+}
+
 /** Delete `count` characters using the host editor's forward-delete primitive. */
 function deleteForward(editor: VimEditorHost, count: number): void {
   for (let i = 0; i < count; ++i) {
@@ -85,8 +202,8 @@ function deleteForward(editor: VimEditorHost, count: number): void {
  */
 function deleteDistance(
   lines: string[],
-  start: { line: number; col: number },
-  end: { line: number; col: number },
+  start: VimPosition,
+  end: VimPosition,
 ): number {
   if (start.line === end.line) {
     return Math.max(end.col - start.col, 0);
