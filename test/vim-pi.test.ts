@@ -202,6 +202,66 @@ test("VimPiEditor applies Normal-mode word motions", () => {
   }
 });
 
+test("VimPiEditor repeats a counted Normal-mode command", () => {
+  const editor = createEditorWithText("abcdef");
+
+  play(editor, [ESC, "0", "3", "l"]);
+
+  assertEditor(editor, {
+    text: "abcdef",
+    cursor: { line: 0, col: 3 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor applies Normal-mode count edge cases", () => {
+  for (const spec of [
+    {
+      name: "count repeats word motion",
+      text: "one two three",
+      keys: [ESC, "0", "2", "w"],
+      textAfter: "one two three",
+      cursor: { line: 0, col: 8 },
+    },
+    {
+      name: "0 extends an active count",
+      text: "abcdefghijkl",
+      keys: [ESC, "0", "1", "0", "l"],
+      textAfter: "abcdefghijkl",
+      cursor: { line: 0, col: 10 },
+    },
+    {
+      name: "count resets after a command",
+      text: "abcdef",
+      keys: [ESC, "0", "2", "l", "l"],
+      textAfter: "abcdef",
+      cursor: { line: 0, col: 3 },
+    },
+    {
+      name: "unmapped keys clear pending count",
+      text: "abcdef",
+      keys: [ESC, "0", "2", "q", "l"],
+      textAfter: "abcdef",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "count repeats delete-under-cursor",
+      text: "abcde",
+      keys: [ESC, "0", "3", "x"],
+      textAfter: "de",
+      cursor: { line: 0, col: 0 },
+    },
+  ] as const) {
+    const editor = createEditorWithText(spec.text);
+    play(editor, spec.keys);
+    assertEditor(
+      editor,
+      { text: spec.textAfter, cursor: spec.cursor, mode: "normal" },
+      spec.name,
+    );
+  }
+});
+
 test("VimPiEditor applies Normal-mode insert-entry commands", () => {
   for (const spec of [
     {
