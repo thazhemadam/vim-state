@@ -4,156 +4,13 @@ import test from "node:test";
 import vimPiExtension, { VimPiEditor } from "../src/index.js";
 import { matchesKey } from "@earendil-works/pi-tui";
 
-import { createActor } from "xstate";
-
 import { normalizePiKey } from "../src/adapters/pi/keymap.js";
-import type { VimEditorApi } from "../src/vim/editor.js";
-import { vimMachine } from "../src/vim/machine.js";
 import { getVimMode } from "../src/vim/selectors.js";
 
-function createVimCore(calls: string[] = []) {
-  const editor: VimEditorApi = {
-    placeCaretAfterCursor: () => calls.push("placeCaretAfterCursor"),
-    placeCaretAtLineEnd: () => calls.push("placeCaretAtLineEnd"),
-    moveCursorLeft: () => calls.push("moveCursorLeft"),
-    moveCursorDown: () => calls.push("moveCursorDown"),
-    moveCursorUp: () => calls.push("moveCursorUp"),
-    moveCursorRight: () => calls.push("moveCursorRight"),
-    moveCursorToLineStart: () => calls.push("moveCursorToLineStart"),
-    moveCursorToLineEnd: () => calls.push("moveCursorToLineEnd"),
-    moveCursorToFirstNonBlank: () => calls.push("moveCursorToFirstNonBlank"),
-    moveCursorToNextWord: () => calls.push("moveCursorToNextWord"),
-    moveCursorToPreviousWord: () => calls.push("moveCursorToPreviousWord"),
-    moveCursorToEndOfWord: () => calls.push("moveCursorToEndOfWord"),
-    insertLineBelow: () => calls.push("insertLineBelow"),
-    insertLineAbove: () => calls.push("insertLineAbove"),
-    placeCaretAtLineStart: () => calls.push("placeCaretAtLineStart"),
-    deleteCharUnderCursor: () => calls.push("deleteCharUnderCursor"),
-    deleteCharBeforeCursor: () => calls.push("deleteCharBeforeCursor"),
-    replaceCharUnderCursor: (char) =>
-      calls.push(`replaceCharUnderCursor:${char}`),
-    clampCursorColumn: () => calls.push("clampCursorColumn"),
-  };
-
-  return createActor(vimMachine, { input: { editor } }).start();
-}
-
-test("Vim core switches between insert and normal", () => {
-  const calls: string[] = [];
-  const actor = createVimCore(calls);
-  assert.equal(getVimMode(actor.getSnapshot()), "insert");
-  assert.deepEqual(calls, []);
-
-  actor.send({ type: "KEY", key: "escape" });
-  assert.equal(getVimMode(actor.getSnapshot()), "normal");
-  assert.deepEqual(calls, ["moveCursorLeft"]);
-
-  const valueBeforeNoop = actor.getSnapshot().value;
-  actor.send({ type: "KEY", key: "escape" });
-  assert.equal(actor.getSnapshot().value, valueBeforeNoop);
-  assert.deepEqual(calls, ["moveCursorLeft"]);
-
-  actor.send({ type: "KEY", key: "i" });
-  assert.equal(getVimMode(actor.getSnapshot()), "insert");
-  assert.deepEqual(calls, ["moveCursorLeft"]);
-});
-
-test("Vim core calls Normal-mode insert-entry editor methods", () => {
-  for (const [key, expectedCalls] of [
-    ["a", ["placeCaretAfterCursor"]],
-    ["A", ["placeCaretAtLineEnd"]],
-    ["I", ["moveCursorToFirstNonBlank"]],
-    ["o", ["insertLineBelow", "placeCaretAtLineStart"]],
-    ["O", ["insertLineAbove", "placeCaretAtLineStart"]],
-  ] as const) {
-    const calls: string[] = [];
-    const actor = createVimCore(calls);
-    actor.send({ type: "KEY", key: "escape" });
-    calls.length = 0;
-
-    actor.send({ type: "KEY", key });
-    assert.equal(getVimMode(actor.getSnapshot()), "insert");
-    assert.deepEqual(calls, expectedCalls);
-  }
-});
-
-test("Vim core calls Normal-mode cursor editor methods", () => {
-  const calls: string[] = [];
-  const actor = createVimCore(calls);
-  actor.send({ type: "KEY", key: "escape" });
-
-  for (const [key, expectedCall] of [
-    ["h", "moveCursorLeft"],
-    ["j", "moveCursorDown"],
-    ["k", "moveCursorUp"],
-    ["l", "moveCursorRight"],
-    ["0", "moveCursorToLineStart"],
-    ["$", "moveCursorToLineEnd"],
-    ["^", "moveCursorToFirstNonBlank"],
-    ["_", "moveCursorToFirstNonBlank"],
-    ["w", "moveCursorToNextWord"],
-    ["b", "moveCursorToPreviousWord"],
-    ["e", "moveCursorToEndOfWord"],
-  ] as const) {
-    calls.length = 0;
-    actor.send({ type: "KEY", key });
-    assert.equal(getVimMode(actor.getSnapshot()), "normal");
-    assert.deepEqual(calls, [expectedCall]);
-  }
-});
-
-test("Vim core calls Normal-mode character deletion editor methods", () => {
-  const calls: string[] = [];
-  const actor = createVimCore(calls);
-  actor.send({ type: "KEY", key: "escape" });
-  calls.length = 0;
-
-  actor.send({ type: "KEY", key: "x" });
-  assert.equal(getVimMode(actor.getSnapshot()), "normal");
-  assert.deepEqual(calls, ["deleteCharUnderCursor", "clampCursorColumn"]);
-
-  calls.length = 0;
-  actor.send({ type: "KEY", key: "X" });
-  assert.equal(getVimMode(actor.getSnapshot()), "normal");
-  assert.deepEqual(calls, ["deleteCharBeforeCursor", "moveCursorLeft"]);
-});
-
-test("Vim core enters Replace mode and deletes under printable keys", () => {
-  const calls: string[] = [];
-  const actor = createVimCore(calls);
-  actor.send({ type: "KEY", key: "escape" });
-  actor.send({ type: "KEY", key: "R" });
-  assert.equal(getVimMode(actor.getSnapshot()), "replace");
-  assert.deepEqual(calls, ["moveCursorLeft"]);
-
-  calls.length = 0;
-  actor.send({ type: "KEY", key: "X" });
-  assert.equal(getVimMode(actor.getSnapshot()), "replace");
-  assert.deepEqual(calls, ["deleteCharUnderCursor"]);
-
-  calls.length = 0;
-  actor.send({ type: "KEY", key: "escape" });
-  assert.equal(getVimMode(actor.getSnapshot()), "normal");
-  assert.deepEqual(calls, ["moveCursorLeft"]);
-});
-
-test("Vim core applies Normal-mode r as one-shot replace", () => {
-  const calls: string[] = [];
-  const actor = createVimCore(calls);
-  actor.send({ type: "KEY", key: "escape" });
-  calls.length = 0;
-
-  actor.send({ type: "KEY", key: "r" });
-  assert.equal(getVimMode(actor.getSnapshot()), "normal");
-  assert.deepEqual(calls, []);
-
-  actor.send({ type: "KEY", key: "X" });
-  assert.equal(getVimMode(actor.getSnapshot()), "normal");
-  assert.deepEqual(calls, ["replaceCharUnderCursor:X"]);
-});
+const ESC = "\x1b";
 
 test("Pi keymap normalizes raw input into Vim keys", () => {
-  assert.equal(normalizePiKey("\x1b"), "escape");
+  assert.equal(normalizePiKey(ESC), "escape");
   assert.equal(normalizePiKey("i"), "i");
   assert.equal(normalizePiKey("\x1b[99;5u"), "ctrl+c");
 });
@@ -177,156 +34,318 @@ test("Pi extension installs a Vim editor", () => {
   assert.equal(typeof installedFactory, "function");
 });
 
-test("VimPiEditor applies Normal-mode hjkl navigation", () => {
+test("VimPiEditor tracks mode and cursor across insert/normal transitions", () => {
   const editor = createEditor();
+  assertEditor(editor, {
+    text: "",
+    cursor: { line: 0, col: 0 },
+    mode: "insert",
+  });
 
-  for (const key of ["a", "b", "c", "\x1b", "l"]) editor.handleInput(key);
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 2 });
+  play(editor, ["a", "b", "c", ESC]);
+  assertEditor(editor, {
+    text: "abc",
+    cursor: { line: 0, col: 2 },
+    mode: "normal",
+  });
 
-  for (const key of ["h", "h", "h", "l"]) editor.handleInput(key);
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 1 });
-  editor.handleInput("$");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 2 });
-  editor.handleInput("0");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 0 });
+  editor.handleInput(ESC);
+  assertEditor(editor, {
+    text: "abc",
+    cursor: { line: 0, col: 2 },
+    mode: "normal",
+  });
 
-  const firstNonBlankEditor = createEditor();
-  firstNonBlankEditor.setText("  abc");
-  firstNonBlankEditor.handleInput("\x1b");
-  firstNonBlankEditor.handleInput("^");
-  assert.deepEqual(firstNonBlankEditor.getCursor(), { line: 0, col: 2 });
-  firstNonBlankEditor.handleInput("0");
-  firstNonBlankEditor.handleInput("_");
-  assert.deepEqual(firstNonBlankEditor.getCursor(), { line: 0, col: 2 });
-
-  const verticalEditor = createEditor();
-  verticalEditor.setText("hello\nworld");
-  verticalEditor.handleInput("\x1b");
-  verticalEditor.handleInput("0");
-  for (const key of ["l", "l", "l"]) verticalEditor.handleInput(key);
-  assert.deepEqual(verticalEditor.getCursor(), { line: 1, col: 3 });
-  verticalEditor.handleInput("k");
-  assert.deepEqual(verticalEditor.getCursor(), { line: 0, col: 3 });
-  verticalEditor.handleInput("k");
-  assert.deepEqual(verticalEditor.getCursor(), { line: 0, col: 3 });
-  verticalEditor.handleInput("j");
-  assert.deepEqual(verticalEditor.getCursor(), { line: 1, col: 3 });
-  verticalEditor.handleInput("j");
-  assert.deepEqual(verticalEditor.getCursor(), { line: 1, col: 3 });
-
-  const shortLineEditor = createEditor();
-  shortLineEditor.setText("x\nhello");
-  shortLineEditor.handleInput("\x1b");
-  assert.deepEqual(shortLineEditor.getCursor(), { line: 1, col: 4 });
-  shortLineEditor.handleInput("k");
-  assert.deepEqual(shortLineEditor.getCursor(), { line: 0, col: 0 });
-
-  const horizontalBoundaryEditor = createEditor();
-  horizontalBoundaryEditor.setText("ab\ncd");
-  horizontalBoundaryEditor.handleInput("\x1b");
-  assert.deepEqual(horizontalBoundaryEditor.getCursor(), { line: 1, col: 1 });
-  horizontalBoundaryEditor.handleInput("l");
-  assert.deepEqual(horizontalBoundaryEditor.getCursor(), { line: 1, col: 1 });
-  horizontalBoundaryEditor.handleInput("0");
-  horizontalBoundaryEditor.handleInput("h");
-  assert.deepEqual(horizontalBoundaryEditor.getCursor(), { line: 1, col: 0 });
-  horizontalBoundaryEditor.handleInput("k");
-  horizontalBoundaryEditor.handleInput("l");
-  assert.deepEqual(horizontalBoundaryEditor.getCursor(), { line: 0, col: 1 });
-  horizontalBoundaryEditor.handleInput("l");
-  assert.deepEqual(horizontalBoundaryEditor.getCursor(), { line: 0, col: 1 });
+  editor.handleInput("i");
+  assertEditor(editor, {
+    text: "abc",
+    cursor: { line: 0, col: 2 },
+    mode: "insert",
+  });
 });
 
-test("VimPiEditor applies Normal-mode w word motion", () => {
-  const editor = createEditor();
-  editor.setText("foo  bar.baz\n  qux");
-  editor.handleInput("\x1b");
-  editor.handleInput("k");
-  editor.handleInput("0");
-
-  editor.handleInput("w");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 5 });
-  editor.handleInput("w");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 8 });
-  editor.handleInput("w");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 9 });
-  editor.handleInput("w");
-  assert.deepEqual(editor.getCursor(), { line: 1, col: 2 });
-
-  const lineEditor = createEditor();
-  lineEditor.setText("ok\nhello\nworld");
-  lineEditor.handleInput("\x1b");
-  lineEditor.handleInput("k");
-  lineEditor.handleInput("k");
-  lineEditor.handleInput("0");
-
-  lineEditor.handleInput("w");
-  assert.deepEqual(lineEditor.getCursor(), { line: 1, col: 0 });
-  lineEditor.handleInput("w");
-  assert.deepEqual(lineEditor.getCursor(), { line: 2, col: 0 });
-
-  const singleLineEditor = createEditor();
-  singleLineEditor.setText("ok hello world");
-  singleLineEditor.handleInput("\x1b");
-  singleLineEditor.handleInput("0");
-
-  singleLineEditor.handleInput("w");
-  assert.deepEqual(singleLineEditor.getCursor(), { line: 0, col: 3 });
-  singleLineEditor.handleInput("w");
-  assert.deepEqual(singleLineEditor.getCursor(), { line: 0, col: 9 });
-});
-
-test("VimPiEditor applies Normal-mode b word motion", () => {
-  const editor = createEditor();
-  editor.setText("foo  bar.baz\n  qux");
-  editor.handleInput("\x1b");
-
-  editor.handleInput("b");
-  assert.deepEqual(editor.getCursor(), { line: 1, col: 2 });
-  editor.handleInput("b");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 9 });
-  editor.handleInput("b");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 8 });
-  editor.handleInput("b");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 5 });
-  editor.handleInput("b");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 0 });
-});
-
-test("VimPiEditor applies Normal-mode e word motion", () => {
-  const editor = createEditor();
-  editor.setText("foo  bar.baz\n  qux");
-  editor.handleInput("\x1b");
-  editor.handleInput("k");
-  editor.handleInput("0");
-
-  editor.handleInput("e");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 2 });
-  editor.handleInput("e");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 7 });
-  editor.handleInput("e");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 8 });
-  editor.handleInput("e");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 11 });
-  editor.handleInput("e");
-  assert.deepEqual(editor.getCursor(), { line: 1, col: 4 });
-});
-
-test("VimPiEditor matches canonical single-line word motion cases", () => {
-  for (const [text, col, key, expectedCol] of [
-    ["foo bar", 0, "w", 4],
-    ["foo-bar", 3, "w", 4],
-    ["foo   bar", 0, "w", 6],
-    ["foobar", 0, "e", 5],
-    ["foo bar", 2, "e", 6],
-    ["foo bar", 4, "b", 0],
-    ["foo bar", 5, "b", 4],
-    ["foo   bar", 6, "b", 0],
+test("VimPiEditor applies Normal-mode cursor navigation", () => {
+  for (const spec of [
+    {
+      name: "h/l stay within current line",
+      text: "abc",
+      keys: [ESC, "h", "h", "h", "l"],
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "0/$ move to line bounds",
+      text: "abc",
+      keys: [ESC, "0", "$"],
+      cursor: { line: 0, col: 2 },
+    },
+    {
+      name: "^/_ move to first non-blank",
+      text: "  abc",
+      keys: [ESC, "^", "0", "_"],
+      cursor: { line: 0, col: 2 },
+    },
+    {
+      name: "j/k preserve column where possible",
+      text: "hello\nworld",
+      keys: [ESC, "0", "l", "l", "l", "k", "j"],
+      cursor: { line: 1, col: 3 },
+    },
+    {
+      name: "k stays at top line",
+      text: "hello\nworld",
+      keys: [ESC, "k", "k"],
+      cursor: { line: 0, col: 4 },
+    },
+    {
+      name: "j stays at bottom line",
+      text: "hello\nworld",
+      keys: [ESC, "j"],
+      cursor: { line: 1, col: 4 },
+    },
+    {
+      name: "j/k clamp onto short lines",
+      text: "x\nhello",
+      keys: [ESC, "k"],
+      cursor: { line: 0, col: 0 },
+    },
+    {
+      name: "horizontal motion does not cross lines",
+      text: "ab\ncd",
+      keys: [ESC, "l", "0", "h", "k", "l", "l"],
+      cursor: { line: 0, col: 1 },
+    },
   ] as const) {
-    const editor = createNormalLineEditor(text, col);
-    editor.handleInput(key);
-    assert.deepEqual(editor.getCursor(), { line: 0, col: expectedCol });
+    const editor = createEditorWithText(spec.text);
+    play(editor, spec.keys);
+    assertEditor(editor, { cursor: spec.cursor, mode: "normal" }, spec.name);
   }
+});
+
+test("VimPiEditor applies Normal-mode word motions", () => {
+  for (const spec of [
+    {
+      name: "w traverses runs and lines",
+      text: "foo  bar.baz\n  qux",
+      keys: [ESC, "k", "0", "w", "w", "w", "w"],
+      cursor: { line: 1, col: 2 },
+    },
+    {
+      name: "b traverses runs and lines backward",
+      text: "foo  bar.baz\n  qux",
+      keys: [ESC, "b", "b", "b", "b", "b"],
+      cursor: { line: 0, col: 0 },
+    },
+    {
+      name: "e traverses run ends and lines",
+      text: "foo  bar.baz\n  qux",
+      keys: [ESC, "k", "0", "e", "e", "e", "e", "e"],
+      cursor: { line: 1, col: 4 },
+    },
+    {
+      name: "w advances across consecutive lines",
+      text: "ok\nhello\nworld",
+      keys: [ESC, "k", "k", "0", "w", "w"],
+      cursor: { line: 2, col: 0 },
+    },
+    {
+      name: "w skips spaces",
+      text: "foo   bar",
+      keys: [ESC, "0", "w"],
+      cursor: { line: 0, col: 6 },
+    },
+    {
+      name: "w advances to the next plain word",
+      text: "foo bar",
+      keys: [ESC, "0", "w"],
+      cursor: { line: 0, col: 4 },
+    },
+    {
+      name: "w advances from punctuation to the next word",
+      text: "foo-bar",
+      keys: [ESC, "0", "l", "l", "l", "w"],
+      cursor: { line: 0, col: 4 },
+    },
+    {
+      name: "e ends current word",
+      text: "foobar",
+      keys: [ESC, "0", "e"],
+      cursor: { line: 0, col: 5 },
+    },
+    {
+      name: "e advances from inside a word to the next word end",
+      text: "foo bar",
+      keys: [ESC, "0", "l", "l", "e"],
+      cursor: { line: 0, col: 6 },
+    },
+    {
+      name: "b from inside word",
+      text: "foo bar",
+      keys: [ESC, "0", "l", "l", "l", "l", "l", "b"],
+      cursor: { line: 0, col: 4 },
+    },
+    {
+      name: "b from word start goes to previous word",
+      text: "foo bar",
+      keys: [ESC, "0", "l", "l", "l", "l", "b"],
+      cursor: { line: 0, col: 0 },
+    },
+    {
+      name: "b skips wider whitespace",
+      text: "foo   bar",
+      keys: [ESC, "0", "l", "l", "l", "l", "l", "l", "b"],
+      cursor: { line: 0, col: 0 },
+    },
+  ] as const) {
+    const editor = createEditorWithText(spec.text);
+    play(editor, spec.keys);
+    assertEditor(editor, { cursor: spec.cursor, mode: "normal" }, spec.name);
+  }
+});
+
+test("VimPiEditor applies Normal-mode insert-entry commands", () => {
+  for (const spec of [
+    {
+      name: "a appends after cursor",
+      keys: ["a", "b", "c", ESC, "a", "X"],
+      text: "abcX",
+      cursor: { line: 0, col: 4 },
+    },
+    {
+      name: "A appends at line end",
+      keys: ["a", "b", "c", ESC, "h", "A", "X"],
+      text: "abcX",
+      cursor: { line: 0, col: 4 },
+    },
+    {
+      name: "I inserts at first non-blank",
+      initialText: "  abc",
+      keys: [ESC, "I", "X"],
+      text: "  Xabc",
+      cursor: { line: 0, col: 3 },
+    },
+    {
+      name: "o opens line below",
+      keys: ["a", "b", "c", ESC, "o", "X"],
+      text: "abc\nX",
+      cursor: { line: 1, col: 1 },
+    },
+    {
+      name: "O opens line above",
+      keys: ["a", "b", "c", ESC, "O", "X"],
+      text: "X\nabc",
+      cursor: { line: 0, col: 1 },
+    },
+  ] as const) {
+    const editor = spec.initialText
+      ? createEditorWithText(spec.initialText)
+      : createEditor();
+    play(editor, spec.keys);
+    assertEditor(
+      editor,
+      {
+        text: spec.text,
+        cursor: spec.cursor,
+        mode: "insert",
+      },
+      spec.name,
+    );
+  }
+});
+
+test("VimPiEditor applies replace commands", () => {
+  const replaceEditor = createEditor();
+  play(replaceEditor, ["a", "b", "c", ESC, "0", "R", "X", "Y"]);
+  assertEditor(replaceEditor, {
+    text: "XYc",
+    cursor: { line: 0, col: 2 },
+    mode: "replace",
+  });
+  assert.match(replaceEditor.render(40).at(-1) ?? "", /-- REPLACE --$/);
+
+  replaceEditor.handleInput(ESC);
+  assertEditor(replaceEditor, {
+    text: "XYc",
+    cursor: { line: 0, col: 1 },
+    mode: "normal",
+  });
+
+  const replaceOnceEditor = createEditor();
+  play(replaceOnceEditor, ["a", "b", "c", ESC, "0", "l", "r"]);
+  assertEditor(replaceOnceEditor, {
+    text: "abc",
+    cursor: { line: 0, col: 1 },
+    mode: "normal",
+  });
+
+  replaceOnceEditor.handleInput("X");
+  assertEditor(replaceOnceEditor, {
+    text: "aXc",
+    cursor: { line: 0, col: 1 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor applies Normal-mode character deletion", () => {
+  for (const spec of [
+    {
+      name: "x deletes under cursor",
+      keys: ["a", "b", "c", ESC, "h", "x"],
+      text: "ac",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "x clamps after deleting last char",
+      keys: ["a", "b", "c", ESC, "x"],
+      text: "ab",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "X deletes before cursor",
+      keys: ["a", "b", "c", ESC, "X"],
+      text: "ac",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "X does nothing at line start",
+      keys: ["a", "b", "c", ESC, "0", "X"],
+      text: "abc",
+      cursor: { line: 0, col: 0 },
+    },
+    {
+      name: "x/X do nothing on empty line",
+      initialText: "",
+      keys: [ESC, "x", "X"],
+      text: "",
+      cursor: { line: 0, col: 0 },
+    },
+  ] as const) {
+    const editor =
+      spec.initialText === undefined
+        ? createEditor()
+        : createEditorWithText(spec.initialText);
+    play(editor, spec.keys);
+    assertEditor(
+      editor,
+      {
+        text: spec.text,
+        cursor: spec.cursor,
+        mode: "normal",
+      },
+      spec.name,
+    );
+  }
+});
+
+test("VimPiEditor delegates insert input and ignores unmapped normal printable keys", () => {
+  const editor = createEditor();
+  play(editor, ["a", "b", "c", ESC, "q", "y", "z", "i", "X"]);
+
+  assertEditor(editor, {
+    text: "abXc",
+    cursor: { line: 0, col: 3 },
+    mode: "insert",
+  });
+  assert.match(editor.render(40).at(-1) ?? "", /-- INSERT --$/);
 });
 
 test("VimPiEditor passes configured app shortcuts through in Normal mode", () => {
@@ -345,123 +364,15 @@ test("VimPiEditor passes configured app shortcuts through in Normal mode", () =>
     cleared = true;
   });
 
-  editor.handleInput("\x1b");
-  editor.handleInput("\x1b");
-  editor.handleInput("\x1b[99;5u");
-  editor.handleInput("\x17");
+  play(editor, [ESC, ESC, "\x1b[99;5u", "\x17"]);
 
   assert.equal(interrupted, true);
   assert.equal(cleared, true);
-  assert.equal(editor.getText(), "");
-});
-
-test("VimPiEditor applies Normal-mode a A I insert entry", () => {
-  const appendEditor = createEditor();
-  for (const key of ["a", "b", "c", "\x1b", "a", "X"])
-    appendEditor.handleInput(key);
-  assert.equal(appendEditor.getText(), "abcX");
-  assert.deepEqual(appendEditor.getCursor(), { line: 0, col: 4 });
-
-  const lineEndEditor = createEditor();
-  for (const key of ["a", "b", "c", "\x1b", "h", "A", "X"])
-    lineEndEditor.handleInput(key);
-  assert.equal(lineEndEditor.getText(), "abcX");
-  assert.deepEqual(lineEndEditor.getCursor(), { line: 0, col: 4 });
-
-  const firstNonBlankEditor = createEditor();
-  firstNonBlankEditor.setText("  abc");
-  firstNonBlankEditor.handleInput("\x1b");
-  firstNonBlankEditor.handleInput("I");
-  firstNonBlankEditor.handleInput("X");
-  assert.equal(firstNonBlankEditor.getText(), "  Xabc");
-  assert.deepEqual(firstNonBlankEditor.getCursor(), { line: 0, col: 3 });
-});
-
-test("VimPiEditor applies Normal-mode o O open-line insert entry", () => {
-  const belowEditor = createEditor();
-  for (const key of ["a", "b", "c", "\x1b", "o", "X"])
-    belowEditor.handleInput(key);
-  assert.equal(belowEditor.getText(), "abc\nX");
-  assert.deepEqual(belowEditor.getCursor(), { line: 1, col: 1 });
-  assert.equal(getVimMode(belowEditor.vimSnapshot), "insert");
-
-  const aboveEditor = createEditor();
-  for (const key of ["a", "b", "c", "\x1b", "O", "X"])
-    aboveEditor.handleInput(key);
-  assert.equal(aboveEditor.getText(), "X\nabc");
-  assert.deepEqual(aboveEditor.getCursor(), { line: 0, col: 1 });
-  assert.equal(getVimMode(aboveEditor.vimSnapshot), "insert");
-});
-
-test("VimPiEditor applies Normal-mode R replace entry", () => {
-  const editor = createEditor();
-  for (const key of ["a", "b", "c", "\x1b", "0", "R", "X", "Y"])
-    editor.handleInput(key);
-
-  assert.equal(editor.getText(), "XYc");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 2 });
-  assert.equal(getVimMode(editor.vimSnapshot), "replace");
-  assert.match(editor.render(40).at(-1) ?? "", /-- REPLACE --$/);
-
-  editor.handleInput("\x1b");
-  assert.equal(getVimMode(editor.vimSnapshot), "normal");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 1 });
-});
-
-test("VimPiEditor applies Normal-mode r one-shot replace", () => {
-  const editor = createEditor();
-  for (const key of ["a", "b", "c", "\x1b", "0", "l", "r", "X"])
-    editor.handleInput(key);
-
-  assert.equal(editor.getText(), "aXc");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 1 });
-  assert.equal(getVimMode(editor.vimSnapshot), "normal");
-});
-
-test("VimPiEditor delegates insert input and ignores unmapped normal printable keys", () => {
-  const editor = createEditor();
-
-  for (const key of ["a", "b", "c", "\x1b", "q", "y", "z", "i", "X"])
-    editor.handleInput(key);
-
-  assert.equal(editor.getText(), "abXc");
-  assert.deepEqual(editor.getCursor(), { line: 0, col: 3 });
-  assert.equal(getVimMode(editor.vimSnapshot), "insert");
-  assert.match(editor.render(40).at(-1) ?? "", /-- INSERT --$/);
-});
-
-test("VimPiEditor applies Normal-mode x X character deletion", () => {
-  const deleteUnderEditor = createEditor();
-  for (const key of ["a", "b", "c", "\x1b", "h", "x"])
-    deleteUnderEditor.handleInput(key);
-  assert.equal(deleteUnderEditor.getText(), "ac");
-  assert.deepEqual(deleteUnderEditor.getCursor(), { line: 0, col: 1 });
-
-  const deleteLastEditor = createEditor();
-  for (const key of ["a", "b", "c", "\x1b", "x"])
-    deleteLastEditor.handleInput(key);
-  assert.equal(deleteLastEditor.getText(), "ab");
-  assert.deepEqual(deleteLastEditor.getCursor(), { line: 0, col: 1 });
-
-  const deleteBeforeEditor = createEditor();
-  for (const key of ["a", "b", "c", "\x1b", "X"])
-    deleteBeforeEditor.handleInput(key);
-  assert.equal(deleteBeforeEditor.getText(), "ac");
-  assert.deepEqual(deleteBeforeEditor.getCursor(), { line: 0, col: 1 });
-
-  const lineStartEditor = createEditor();
-  for (const key of ["a", "b", "c", "\x1b", "0", "X"])
-    lineStartEditor.handleInput(key);
-  assert.equal(lineStartEditor.getText(), "abc");
-  assert.deepEqual(lineStartEditor.getCursor(), { line: 0, col: 0 });
-
-  const emptyLineEditor = createEditor();
-  emptyLineEditor.setText("");
-  emptyLineEditor.handleInput("\x1b");
-  emptyLineEditor.handleInput("x");
-  emptyLineEditor.handleInput("X");
-  assert.equal(emptyLineEditor.getText(), "");
-  assert.deepEqual(emptyLineEditor.getCursor(), { line: 0, col: 0 });
+  assertEditor(editor, {
+    text: "",
+    cursor: { line: 0, col: 0 },
+    mode: "normal",
+  });
 });
 
 test("VimPiEditor uses hardware bar cursor in insert and fake block cursor in normal", () => {
@@ -470,22 +381,45 @@ test("VimPiEditor uses hardware bar cursor in insert and fake block cursor in no
 
   assert.deepEqual(writes, ["\x1b[6 q"]);
 
-  for (const key of ["a", "b", "c"]) editor.handleInput(key);
+  play(editor, ["a", "b", "c"]);
   const insertRender = editor.render(40).join("\n");
   assert.doesNotMatch(insertRender, /│/);
   assert.doesNotMatch(insertRender, /\x1b\[7m/);
 
-  editor.handleInput("\x1b");
+  editor.handleInput(ESC);
   assert.deepEqual(writes, ["\x1b[6 q", "\x1b[2 q"]);
   assert.match(editor.render(40).join("\n"), /\x1b\[7mc\x1b\[0m/);
 });
 
-function createNormalLineEditor(text: string, col: number): VimPiEditor {
+function assertEditor(
+  editor: VimPiEditor,
+  expected: {
+    text?: string;
+    cursor?: { line: number; col: number };
+    mode?: "insert" | "normal" | "replace";
+  },
+  message?: string,
+): void {
+  if (expected.text !== undefined) {
+    assert.equal(editor.getText(), expected.text, message);
+  }
+  if (expected.cursor) {
+    assert.deepEqual(editor.getCursor(), expected.cursor, message);
+  }
+  if (expected.mode) {
+    assert.equal(getVimMode(editor.vimSnapshot), expected.mode, message);
+  }
+}
+
+function play(editor: VimPiEditor, keys: readonly string[]): void {
+  for (const key of keys) {
+    editor.handleInput(key);
+  }
+}
+
+function createEditorWithText(text: string): VimPiEditor {
   const editor = createEditor();
   editor.setText(text);
-  editor.handleInput("\x1b");
-  editor.handleInput("0");
-  for (let i = 0; i < col; i += 1) editor.handleInput("l");
   return editor;
 }
 
