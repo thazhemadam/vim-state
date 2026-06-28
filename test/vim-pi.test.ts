@@ -968,6 +968,40 @@ test("VimPiEditor applies Normal-mode character deletion", () => {
   }
 });
 
+test("VimPiEditor applies Normal-mode case toggle", () => {
+  for (const spec of [
+    {
+      name: "~ toggles case under cursor and advances",
+      text: "abC",
+      keys: [ESC, "0", "~"],
+      textAfter: "AbC",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "counted ~ toggles multiple characters and clamps at line end",
+      text: "a1Bc",
+      keys: [ESC, "0", "4", "~"],
+      textAfter: "A1bC",
+      cursor: { line: 0, col: 3 },
+    },
+    {
+      name: "~ does nothing on empty line",
+      text: "",
+      keys: [ESC, "~"],
+      textAfter: "",
+      cursor: { line: 0, col: 0 },
+    },
+  ] as const) {
+    const editor = createEditorWithText(spec.text);
+    play(editor, spec.keys);
+    assertEditor(
+      editor,
+      { text: spec.textAfter, cursor: spec.cursor, mode: "normal" },
+      spec.name,
+    );
+  }
+});
+
 test("VimPiEditor applies Normal-mode line join", () => {
   for (const spec of [
     {

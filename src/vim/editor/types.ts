@@ -63,6 +63,7 @@ export interface VimEditorApi {
   yank(noun: VimNoun, count?: number): VimRegister | undefined;
   put(register: VimRegister, placement: "before" | "after"): void;
   replaceCharUnderCursor(char: string): void;
+  toggleCase(count?: number): void;
   clampCursorColumn(): void;
 }
 

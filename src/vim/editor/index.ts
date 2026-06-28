@@ -27,7 +27,7 @@ import type {
   VimRange,
   VimRegister,
 } from "./types.js";
-import { firstNonBlankColumn, normalMaxColumn } from "./utils.js";
+import { firstNonBlankColumn, normalMaxColumn, toggledCase } from "./utils.js";
 
 export type {
   VimEditorApi,
@@ -147,6 +147,20 @@ class VimEditorCore implements VimEditorApi {
     this.delete("right");
     this.host.sendInputToEditor(char);
     this.move("left");
+  }
+
+  /** Toggle character case under the cursor and advance right, clamping at line end. */
+  toggleCase(count = 1): void {
+    for (let i = 0; i < Math.max(count, 1); ++i) {
+      const char = this.currentLine[this.cursor.col];
+      if (!char) {
+        return;
+      }
+
+      this.deleteForward(1);
+      this.host.sendInputToEditor(toggledCase(char));
+    }
+    this.clampCursorColumn();
   }
 
   /** Move left until the Normal-mode cursor sits on a character, or column 0 for an empty line. */
@@ -509,3 +523,4 @@ export function VimEditor<TBase extends Constructor<VimEditorHost>>(
     readonly vimEditor = new VimEditorCore(this);
   };
 }
+

@@ -86,6 +86,7 @@ export const vimMachine = setup({
     },
     replaceCharUnderCursor: ({ context }, params: { char: string }) =>
       context.editor.replaceCharUnderCursor(params.char),
+    toggleCase: ({ context }) => context.editor.toggleCase(context.count ?? 1),
   },
   guards: {
     keyIs: ({ event }, params: { key: string }) => event.key === params.key,
@@ -314,6 +315,10 @@ export const vimMachine = setup({
               { type: "delete", params: { noun: "left" } },
               { type: "clearCount" },
             ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "~" } },
+            actions: [{ type: "toggleCase" }, { type: "clearCount" }],
           },
           {
             guard: { type: "keyIs", params: { key: "p" } },

@@ -247,6 +247,13 @@ export function nounForKey(
   return NOUN_BY_KEY[key];
 }
 
+/** Return the same character with letter case flipped; non-letters are unchanged. */
+export function toggledCase(char: string): string {
+  const lower = char.toLocaleLowerCase();
+  const upper = char.toLocaleUpperCase();
+  return char === lower && lower !== upper ? upper : lower;
+}
+
 /** Classify characters for the initial word-motion subset. */
 function charType(char: string): "word" | "punct" | "space" {
   if (isWhitespace(char)) {
