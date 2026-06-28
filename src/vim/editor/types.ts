@@ -56,7 +56,7 @@ export interface VimEditorApi {
   placeCaretAtLineEnd(): void;
   delete(noun: VimNoun, count?: number): VimRegister | undefined;
   change(noun: VimNoun, count?: number): VimRegister | undefined;
-  yankToRegister(noun: VimNoun, count?: number): VimRegister | undefined;
+  yank(noun: VimNoun, count?: number): VimRegister | undefined;
   put(register: VimRegister, placement: "before" | "after"): void;
   replaceCharUnderCursor(char: string): void;
   clampCursorColumn(): void;

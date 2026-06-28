@@ -104,7 +104,7 @@ class VimEditorCore implements VimEditorApi {
   }
 
   /** Store a supported operator noun in the unnamed register. */
-  yankToRegister(noun: VimNoun, count = 1): VimRegister | undefined {
+  yank(noun: VimNoun, count = 1): VimRegister | undefined {
     return this.applyOperator(noun, count, (range) =>
       this.registerForRange(range),
     );

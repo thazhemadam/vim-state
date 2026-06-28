@@ -55,7 +55,7 @@ export const vimMachine = setup({
             ? context.editor.change(noun, count)
             : context.operator.name === "delete"
               ? context.editor.delete(noun, count)
-              : context.editor.yankToRegister(noun, count);
+              : context.editor.yank(noun, count);
 
         // Change enters Insert mode; after c$/C, place the caret after the
         // remaining last character instead of before it.
