@@ -29,4 +29,5 @@ export const NOUN_BY_KEY: Record<string, VimMotion> = {
   w: "nextWord",
   b: "previousWord",
   e: "endOfWord",
+  W: "nextBigWord",
 };

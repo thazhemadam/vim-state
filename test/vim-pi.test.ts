@@ -195,6 +195,12 @@ test("VimPiEditor applies Normal-mode word motions", () => {
       keys: [ESC, "0", "l", "l", "l", "l", "l", "l", "b"],
       cursor: { line: 0, col: 0 },
     },
+    {
+      name: "W treats punctuation as part of a WORD",
+      text: "foo-bar baz",
+      keys: [ESC, "0", "W"],
+      cursor: { line: 0, col: 8 },
+    },
   ] as const) {
     const editor = createEditorWithText(spec.text);
     play(editor, spec.keys);
@@ -318,6 +324,13 @@ test("VimPiEditor applies delete operator motions", () => {
       text: "one two three",
       keys: [ESC, "0", "d", "w"],
       textAfter: "two three",
+      cursor: { line: 0, col: 0 },
+    },
+    {
+      name: "dW deletes to next WORD",
+      text: "foo-bar baz",
+      keys: [ESC, "0", "d", "W"],
+      textAfter: "baz",
       cursor: { line: 0, col: 0 },
     },
     {

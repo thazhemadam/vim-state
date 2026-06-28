@@ -133,6 +133,37 @@ export function endOfWordPosition(
   return { line: lastLine, col: normalMaxColumn(lines[lastLine] ?? "") };
 }
 
+/** Return the next whitespace-delimited WORD start for Normal-mode `W`. */
+export function nextBigWordPosition(
+  lines: string[],
+  cursor: { line: number; col: number },
+): { line: number; col: number } {
+  for (let lineIndex = cursor.line; lineIndex < lines.length; lineIndex += 1) {
+    const line = lines[lineIndex] ?? "";
+    let col = lineIndex === cursor.line ? cursor.col : 0;
+
+    if (
+      lineIndex === cursor.line &&
+      col < line.length &&
+      !isWhitespace(line[col]!)
+    ) {
+      while (col < line.length && !isWhitespace(line[col]!)) {
+        col += 1;
+      }
+    }
+    while (col < line.length && isWhitespace(line[col]!)) {
+      col += 1;
+    }
+
+    if (col < line.length) {
+      return { line: lineIndex, col };
+    }
+  }
+
+  const lastLine = Math.max(lines.length - 1, 0);
+  return { line: lastLine, col: normalMaxColumn(lines[lastLine] ?? "") };
+}
+
 /**
  * Resolve a Vim key into the noun/motion it names.
  *

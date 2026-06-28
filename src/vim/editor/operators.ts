@@ -1,6 +1,7 @@
 import type { VimPosition, VimRange, VimRegister } from "./types.js";
 import {
   endOfWordPosition,
+  nextBigWordPosition,
   nextWordPosition,
   previousWordPosition,
 } from "./utils.js";
@@ -20,7 +21,7 @@ export function registerForRange(
 export function countedWordPosition(
   lines: string[],
   start: VimPosition,
-  noun: "nextWord" | "previousWord" | "endOfWord",
+  noun: WordMotion,
   count: number,
 ): VimPosition {
   let position = start;
@@ -75,11 +76,16 @@ export function deleteDistance(
   return distance + end.col;
 }
 
+type WordMotion =
+  | "nextWord"
+  | "previousWord"
+  | "endOfWord"
+  | "nextBigWord"
 /** Resolve one supported word-ish motion. */
 function wordPosition(
   lines: string[],
   position: VimPosition,
-  noun: "nextWord" | "previousWord" | "endOfWord",
+  noun: WordMotion,
 ): VimPosition {
   switch (noun) {
     case "nextWord":
@@ -88,6 +94,8 @@ function wordPosition(
       return previousWordPosition(lines, position);
     case "endOfWord":
       return endOfWordPosition(lines, position);
+    case "nextBigWord":
+      return nextBigWordPosition(lines, position);
   }
 }
 

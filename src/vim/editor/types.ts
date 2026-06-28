@@ -9,7 +9,8 @@ export type VimMotion =
   | "firstNonBlank"
   | "nextWord"
   | "previousWord"
-  | "endOfWord";
+  | "endOfWord"
+  | "nextBigWord"
 
 /** Pending operator plus the count captured before the operator key. */
 export type VimOperator = {

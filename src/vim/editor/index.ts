@@ -267,7 +267,8 @@ class VimEditorCore implements VimEditorApi {
         };
       }
 
-      case "nextWord": {
+      case "nextWord":
+      case "nextBigWord": {
         const destination = countedWordPosition(this.lines, start, noun, steps);
         return {
           range: { type: "charwise", start, end: destination },
