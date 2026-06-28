@@ -3,6 +3,7 @@ import {
   endOfWordPosition,
   nextBigWordPosition,
   nextWordPosition,
+  previousBigWordPosition,
   previousWordPosition,
 } from "./utils.js";
 
@@ -81,6 +82,7 @@ type WordMotion =
   | "previousWord"
   | "endOfWord"
   | "nextBigWord"
+  | "previousBigWord"
 /** Resolve one supported word-ish motion. */
 function wordPosition(
   lines: string[],
@@ -96,6 +98,8 @@ function wordPosition(
       return endOfWordPosition(lines, position);
     case "nextBigWord":
       return nextBigWordPosition(lines, position);
+    case "previousBigWord":
+      return previousBigWordPosition(lines, position);
   }
 }
 

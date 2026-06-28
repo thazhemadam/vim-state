@@ -164,6 +164,38 @@ export function nextBigWordPosition(
   return { line: lastLine, col: normalMaxColumn(lines[lastLine] ?? "") };
 }
 
+/** Return the previous whitespace-delimited WORD start for Normal-mode `B`. */
+export function previousBigWordPosition(
+  lines: string[],
+  cursor: { line: number; col: number },
+): { line: number; col: number } {
+  for (let lineIndex = cursor.line; lineIndex >= 0; lineIndex -= 1) {
+    const line = lines[lineIndex] ?? "";
+    let col = lineIndex === cursor.line ? cursor.col : line.length - 1;
+
+    while (col >= 0) {
+      while (col >= 0 && isWhitespace(line[col]!)) {
+        col -= 1;
+      }
+      if (col < 0) {
+        break;
+      }
+
+      let start = col;
+      while (start > 0 && !isWhitespace(line[start - 1]!)) {
+        start -= 1;
+      }
+
+      if (lineIndex !== cursor.line || start !== cursor.col) {
+        return { line: lineIndex, col: start };
+      }
+      col = start - 1;
+    }
+  }
+
+  return { line: 0, col: 0 };
+}
+
 /**
  * Resolve a Vim key into the noun/motion it names.
  *

@@ -201,6 +201,12 @@ test("VimPiEditor applies Normal-mode word motions", () => {
       keys: [ESC, "0", "W"],
       cursor: { line: 0, col: 8 },
     },
+    {
+      name: "B treats punctuation as part of a WORD",
+      text: "foo-bar baz",
+      keys: [ESC, "0", "W", "B"],
+      cursor: { line: 0, col: 0 },
+    },
   ] as const) {
     const editor = createEditorWithText(spec.text);
     play(editor, spec.keys);

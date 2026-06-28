@@ -11,6 +11,7 @@ export type VimMotion =
   | "previousWord"
   | "endOfWord"
   | "nextBigWord"
+  | "previousBigWord"
 
 /** Pending operator plus the count captured before the operator key. */
 export type VimOperator = {
