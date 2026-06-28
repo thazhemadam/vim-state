@@ -12,7 +12,7 @@ export type VimMotion =
   | "endOfWord";
 
 export type VimOperator = {
-  name: "delete";
+  name: "delete" | "change";
   count?: number;
 };
 

@@ -366,6 +366,122 @@ test("VimPiEditor applies delete operator motions", () => {
   }
 });
 
+test("VimPiEditor applies change operator motions", () => {
+  for (const spec of [
+    {
+      name: "cl deletes under cursor and enters insert",
+      text: "abc",
+      keys: [ESC, "0", "c", "l", "X"],
+      textAfter: "Xbc",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "ch deletes before cursor and enters insert",
+      text: "abc",
+      keys: [ESC, "0", "l", "l", "c", "h", "X"],
+      textAfter: "aXc",
+      cursor: { line: 0, col: 2 },
+    },
+    {
+      name: "cj deletes current and next line and enters insert",
+      text: "one\ntwo\nthree",
+      keys: [ESC, "k", "k", "c", "j", "X"],
+      textAfter: "Xthree",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "ck deletes previous and current line and enters insert",
+      text: "one\ntwo\nthree",
+      keys: [ESC, "k", "c", "k", "X"],
+      textAfter: "Xthree",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "cw deletes to next word and enters insert",
+      text: "one two three",
+      keys: [ESC, "0", "c", "w", "X"],
+      textAfter: "Xtwo three",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "2cw repeats change-word and enters insert",
+      text: "one two three",
+      keys: [ESC, "0", "2", "c", "w", "X"],
+      textAfter: "Xthree",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "c2w changes two words and enters insert",
+      text: "one two three",
+      keys: [ESC, "0", "c", "2", "w", "X"],
+      textAfter: "Xthree",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "2c2w multiplies operator and motion counts",
+      text: "one two three four five",
+      keys: [ESC, "0", "2", "c", "2", "w", "X"],
+      textAfter: "Xfive",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "cc deletes current line and enters insert",
+      text: "one\ntwo",
+      keys: [ESC, "k", "c", "c", "X"],
+      textAfter: "Xtwo",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "2cc changes two lines and enters insert",
+      text: "one\ntwo\nthree",
+      keys: [ESC, "k", "k", "2", "c", "c", "X"],
+      textAfter: "Xthree",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "c2c changes two lines and enters insert",
+      text: "one\ntwo\nthree",
+      keys: [ESC, "k", "k", "c", "2", "c", "X"],
+      textAfter: "Xthree",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "c$ deletes to line end and enters insert",
+      text: "one two",
+      keys: [ESC, "0", "l", "l", "l", "c", "$", "X"],
+      textAfter: "oneX",
+      cursor: { line: 0, col: 4 },
+    },
+    {
+      name: "C deletes to line end and enters insert",
+      text: "one two",
+      keys: [ESC, "0", "l", "l", "l", "C", "X"],
+      textAfter: "oneX",
+      cursor: { line: 0, col: 4 },
+    },
+  ] as const) {
+    const editor = createEditorWithText(spec.text);
+    play(editor, spec.keys);
+    assertEditor(
+      editor,
+      { text: spec.textAfter, cursor: spec.cursor, mode: "insert" },
+      spec.name,
+    );
+  }
+});
+
+test("VimPiEditor cancels a pending change operator", () => {
+  const editor = createEditorWithText("one two");
+
+  play(editor, [ESC, "0", "c", ESC, "w"]);
+
+  assertEditor(editor, {
+    text: "one two",
+    cursor: { line: 0, col: 4 },
+    mode: "normal",
+  });
+});
+
 test("VimPiEditor applies Normal-mode insert-entry commands", () => {
   for (const spec of [
     {

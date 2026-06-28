@@ -1,7 +1,7 @@
 import { assign, setup, type SnapshotFrom } from "xstate";
 
 import { type VimContext, type VimInput } from "./context.js";
-import type { VimMotion, VimNoun } from "./editor.js";
+import type { VimMotion, VimNoun, VimOperator } from "./editor.js";
 import { nounForKey } from "./editor.js";
 import type { VimEvent } from "./events.js";
 import { initialVimMode } from "./state.js";
@@ -18,8 +18,11 @@ export const vimMachine = setup({
         (context.count ?? 0) * 10 + Number(event.key),
     }),
     clearCount: assign({ count: undefined }),
-    setDeleteOperator: assign({
-      operator: ({ context }) => ({ name: "delete", count: context.count }),
+    setOperator: assign({
+      operator: ({ context }, params: { name: VimOperator["name"] }) => ({
+        name: params.name,
+        count: context.count,
+      }),
       count: undefined,
     }),
     clearOperator: assign({ operator: undefined }),
@@ -41,13 +44,19 @@ export const vimMachine = setup({
       context.editor.placeCaretAtLineStart(),
     applyPendingOperatorToEventNoun: ({ context, event }) => {
       const noun = nounForKey(event.key, context.operator);
-      if (!noun || context.operator?.name !== "delete") {
+      if (!noun || !context.operator) {
         return;
       }
 
       const count = (context.operator.count ?? 1) * (context.count ?? 1);
       for (let i = 0; i < count; ++i) {
         context.editor.delete(noun);
+      }
+
+      // Change enters Insert mode; after c$/C, place the caret after the
+      // remaining last character instead of before it.
+      if (context.operator.name === "change" && noun === "lineEnd") {
+        context.editor.placeCaretAfterCursor();
       }
     },
     delete: ({ context }, params: { noun: VimNoun }) =>
@@ -63,7 +72,11 @@ export const vimMachine = setup({
       /^[1-9]$/.test(event.key) ||
       (event.key === "0" && context.count !== undefined),
     keyIsMotionNoun: ({ event }) => nounForKey(event.key) !== undefined,
-    keyIsOperatorNoun: ({ context, event }) =>
+    keyIsOperatorNoun: (
+      { context, event },
+      params: { name: VimOperator["name"] },
+    ) =>
+      context.operator?.name === params.name &&
       nounForKey(event.key, context.operator) !== undefined,
   },
 }).createMachine({
@@ -131,7 +144,16 @@ export const vimMachine = setup({
             actions: { type: "appendCount" },
           },
           {
-            guard: { type: "keyIsOperatorNoun" },
+            guard: { type: "keyIsOperatorNoun", params: { name: "change" } },
+            target: "insert",
+            actions: [
+              { type: "applyPendingOperatorToEventNoun" },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIsOperatorNoun", params: { name: "delete" } },
             target: "normal",
             actions: [
               { type: "applyPendingOperatorToEventNoun" },
@@ -192,7 +214,21 @@ export const vimMachine = setup({
           {
             guard: { type: "keyIs", params: { key: "d" } },
             target: "operator-pending",
-            actions: { type: "setDeleteOperator" },
+            actions: { type: "setOperator", params: { name: "delete" } },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "c" } },
+            target: "operator-pending",
+            actions: { type: "setOperator", params: { name: "change" } },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "C" } },
+            target: "insert",
+            actions: [
+              { type: "delete", params: { noun: "lineEnd" } },
+              { type: "placeCaretAfterCursor" },
+              { type: "clearCount" },
+            ],
           },
           {
             guard: { type: "keyIs", params: { key: "D" } },
