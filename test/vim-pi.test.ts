@@ -262,6 +262,54 @@ test("VimPiEditor applies Normal-mode count edge cases", () => {
   }
 });
 
+test("VimPiEditor applies delete operator motions", () => {
+  for (const spec of [
+    {
+      name: "dw deletes to next word",
+      text: "one two three",
+      keys: [ESC, "0", "d", "w"],
+      textAfter: "two three",
+      cursor: { line: 0, col: 0 },
+    },
+    {
+      name: "2dw repeats delete-word",
+      text: "one two three",
+      keys: [ESC, "0", "2", "d", "w"],
+      textAfter: "three",
+      cursor: { line: 0, col: 0 },
+    },
+    {
+      name: "d$ deletes to line end",
+      text: "one two",
+      keys: [ESC, "0", "l", "l", "l", "l", "d", "$"],
+      textAfter: "one ",
+      cursor: { line: 0, col: 3 },
+    },
+    {
+      name: "dd deletes current line",
+      text: "one\ntwo",
+      keys: [ESC, "k", "d", "d"],
+      textAfter: "two",
+      cursor: { line: 0, col: 0 },
+    },
+    {
+      name: "escape cancels pending delete operator",
+      text: "one two",
+      keys: [ESC, "0", "d", ESC, "w"],
+      textAfter: "one two",
+      cursor: { line: 0, col: 4 },
+    },
+  ] as const) {
+    const editor = createEditorWithText(spec.text);
+    play(editor, spec.keys);
+    assertEditor(
+      editor,
+      { text: spec.textAfter, cursor: spec.cursor, mode: "normal" },
+      spec.name,
+    );
+  }
+});
+
 test("VimPiEditor applies Normal-mode insert-entry commands", () => {
   for (const spec of [
     {

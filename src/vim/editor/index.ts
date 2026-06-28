@@ -13,6 +13,8 @@ import type { Constructor, VimEditorApi, VimEditorHost } from "./types.js";
 import {
   currentLine,
   cursor,
+  deleteDistance,
+  deleteForward,
   endOfWordPosition,
   firstNonBlankColumn,
   moveCaretToColumn,
@@ -153,6 +155,33 @@ export function VimEditor<TBase extends Constructor<VimEditorHost>>(
 
       const targetCol = Math.min(col, currentLine(this).length);
       while (cursor(this).col < targetCol) this.sendInputToEditor(ARROW_RIGHT);
+    }
+
+    /** Delete from the Normal-mode cursor to the start of the next word-like run. */
+    deleteToNextWord(): void {
+      const target = nextWordPosition(this.getLines(), cursor(this));
+      deleteForward(
+        this,
+        deleteDistance(this.getLines(), cursor(this), target),
+      );
+      this.clampCursorColumn();
+    }
+
+    /** Delete from the Normal-mode cursor through the end of the current line. */
+    deleteToLineEnd(): void {
+      deleteForward(this, currentLine(this).length - cursor(this).col);
+      this.clampCursorColumn();
+    }
+
+    /** Delete the current line and leave the cursor at the start of the joined line. */
+    deleteCurrentLine(): void {
+      const line = cursor(this).line;
+      const lineLength = currentLine(this).length;
+      this.moveCursorToLineStart();
+      deleteForward(this, lineLength);
+      if (line < this.getLines().length - 1)
+        this.sendInputToEditor(DELETE_FORWARD);
+      this.clampCursorColumn();
     }
 
     /** Replace the Normal-mode character under the cursor and keep the cursor on the replacement. */

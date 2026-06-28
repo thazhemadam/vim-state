@@ -16,6 +16,9 @@ export interface VimEditorApi {
   placeCaretAtLineEnd(): void;
   deleteCharUnderCursor(): void;
   deleteCharBeforeCursor(): void;
+  deleteToNextWord(): void;
+  deleteToLineEnd(): void;
+  deleteCurrentLine(): void;
   replaceCharUnderCursor(char: string): void;
   clampCursorColumn(): void;
 }

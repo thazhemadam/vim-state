@@ -1,6 +1,6 @@
 import { assign, setup, type SnapshotFrom } from "xstate";
 
-import { type VimContext, type VimInput } from "./context.js";
+import { type VimContext, type VimInput, type VimOperator } from "./context.js";
 import type { VimEvent } from "./events.js";
 import { initialVimMode } from "./state.js";
 
@@ -16,6 +16,8 @@ export const vimMachine = setup({
         (context.count ?? 0) * 10 + Number(event.key),
     }),
     clearCount: assign({ count: undefined }),
+    setDeleteOperator: assign({ pendingOperator: "delete" }),
+    clearOperator: assign({ pendingOperator: undefined }),
     placeCaretAfterCursor: ({ context }) =>
       context.editor.placeCaretAfterCursor(),
     placeCaretAtLineEnd: ({ context }) => context.editor.placeCaretAtLineEnd(),
@@ -47,6 +49,12 @@ export const vimMachine = setup({
       repeat(context, () => context.editor.deleteCharUnderCursor()),
     deleteCharBeforeCursor: ({ context }) =>
       repeat(context, () => context.editor.deleteCharBeforeCursor()),
+    deleteToNextWord: ({ context }) =>
+      repeat(context, () => context.editor.deleteToNextWord()),
+    deleteToLineEnd: ({ context }) =>
+      repeat(context, () => context.editor.deleteToLineEnd()),
+    deleteCurrentLine: ({ context }) =>
+      repeat(context, () => context.editor.deleteCurrentLine()),
     replaceCharUnderCursor: ({ context }, params: { char: string }) =>
       context.editor.replaceCharUnderCursor(params.char),
     clampCursorColumn: ({ context }) => context.editor.clampCursorColumn(),
@@ -58,10 +66,19 @@ export const vimMachine = setup({
     keyIsCountDigit: ({ event }) => /^[1-9]$/.test(event.key),
     keyIsZeroWithCount: ({ context, event }) =>
       event.key === "0" && context.count !== undefined,
+    pendingOperatorKeyIs: (
+      { context, event },
+      params: { operator: VimOperator; key: string },
+    ) =>
+      context.pendingOperator === params.operator && event.key === params.key,
   },
 }).createMachine({
   id: "vim-pi",
-  context: ({ input }) => ({ editor: input.editor, count: undefined }),
+  context: ({ input }) => ({
+    editor: input.editor,
+    count: undefined,
+    pendingOperator: undefined,
+  }),
   initial: initialVimMode,
   states: {
     insert: {
@@ -104,6 +121,57 @@ export const vimMachine = setup({
             },
           },
           { target: "normal" },
+        ],
+      },
+    },
+    "operator-pending": {
+      on: {
+        KEY: [
+          {
+            guard: { type: "keyIs", params: { key: "escape" } },
+            target: "normal",
+            actions: [{ type: "clearOperator" }, { type: "clearCount" }],
+          },
+          {
+            guard: {
+              type: "pendingOperatorKeyIs",
+              params: { operator: "delete", key: "w" },
+            },
+            target: "normal",
+            actions: [
+              { type: "deleteToNextWord" },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: {
+              type: "pendingOperatorKeyIs",
+              params: { operator: "delete", key: "$" },
+            },
+            target: "normal",
+            actions: [
+              { type: "deleteToLineEnd" },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: {
+              type: "pendingOperatorKeyIs",
+              params: { operator: "delete", key: "d" },
+            },
+            target: "normal",
+            actions: [
+              { type: "deleteCurrentLine" },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            target: "normal",
+            actions: [{ type: "clearOperator" }, { type: "clearCount" }],
+          },
         ],
       },
     },
@@ -153,6 +221,11 @@ export const vimMachine = setup({
             guard: { type: "keyIs", params: { key: "r" } },
             target: "replace-once",
             actions: { type: "clearCount" },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "d" } },
+            target: "operator-pending",
+            actions: { type: "setDeleteOperator" },
           },
           {
             guard: { type: "keyIs", params: { key: "o" } },

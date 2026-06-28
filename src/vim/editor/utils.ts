@@ -1,4 +1,10 @@
-import { ARROW_DOWN, ARROW_RIGHT, ARROW_UP, LINE_START } from "./constants.js";
+import {
+  ARROW_DOWN,
+  ARROW_RIGHT,
+  ARROW_UP,
+  DELETE_FORWARD,
+  LINE_START,
+} from "./constants.js";
 import type { VimEditorHost } from "./types.js";
 
 export function cursor(editor: VimEditorHost): { line: number; col: number } {
@@ -161,6 +167,31 @@ export function endOfWordPosition(
 
   const lastLine = Math.max(lines.length - 1, 0);
   return { line: lastLine, col: normalMaxColumn(lines[lastLine] ?? "") };
+}
+
+/** Delete `count` characters using the host editor's forward-delete primitive. */
+export function deleteForward(editor: VimEditorHost, count: number): void {
+  for (let i = 0; i < count; ++i) editor.sendInputToEditor(DELETE_FORWARD);
+}
+
+/**
+ * Return how many forward deletes move text from `start` up to `end`.
+ *
+ * Crossing a line counts the newline separator as one deleted character, matching
+ * the host editor's repeated forward-delete behavior.
+ */
+export function deleteDistance(
+  lines: string[],
+  start: { line: number; col: number },
+  end: { line: number; col: number },
+): number {
+  if (start.line === end.line) return Math.max(end.col - start.col, 0);
+
+  let distance = (lines[start.line]?.length ?? 0) - start.col + 1;
+  for (let line = start.line + 1; line < end.line; ++line) {
+    distance += (lines[line]?.length ?? 0) + 1;
+  }
+  return distance + end.col;
 }
 
 /** Classify characters for the initial word-motion subset. */
