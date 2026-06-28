@@ -7,6 +7,7 @@ import {
   NEWLINE,
 } from "./constants.js";
 import {
+  applyChangeRange,
   applyDeleteRange,
   resolveMotion,
   resolveOperatorRange,
@@ -105,6 +106,28 @@ export function VimEditor<TBase extends Constructor<VimEditorHost>>(
       return register;
     }
 
+    /** Apply a supported operator noun as a change and return the changed text. */
+    change(noun: VimNoun, count = 1): VimRegister | undefined {
+      if (noun === "line") {
+        const range = resolveOperatorRange(this, noun, count);
+        return range ? applyChangeRange(this, range) : undefined;
+      }
+
+      let register: VimRegister | undefined;
+      for (let i = 0; i < count; ++i) {
+        const range = resolveOperatorRange(this, noun);
+        if (!range) {
+          continue;
+        }
+        const changed = applyChangeRange(this, range);
+        register = appendRegister(register, changed, noun);
+        if (noun !== "left") {
+          this.clampCursorColumn();
+        }
+      }
+      return register;
+    }
+
     /** Put unnamed-register text before/after the cursor, or above/below the current line. */
     put(register: VimRegister, placement: "before" | "after"): void {
       if (register.type === "linewise") {
@@ -151,4 +174,26 @@ function insertText(editor: VimEditorHost, text: string): void {
   for (const char of text) {
     editor.sendInputToEditor(char);
   }
+}
+
+/** Append repeated change payloads in buffer order, including backward motions. */
+function appendRegister(
+  register: VimRegister | undefined,
+  changed: VimRegister,
+  noun: VimNoun,
+): VimRegister {
+  if (!register) {
+    return changed;
+  }
+  return {
+    type: changed.type,
+    text: deletesBackward(noun)
+      ? changed.text + register.text
+      : register.text + changed.text,
+  };
+}
+
+/** Return true when repeated changes walk backward through the buffer. */
+function deletesBackward(noun: VimNoun): boolean {
+  return noun === "left" || noun === "previousWord" || noun === "up";
 }

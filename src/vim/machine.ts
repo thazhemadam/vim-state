@@ -49,11 +49,11 @@ export const vimMachine = setup({
           return context.register;
         }
 
-        const register = deleteForRegister(
-          context,
-          noun,
-          (context.operator.count ?? 1) * (context.count ?? 1),
-        );
+        const count = (context.operator.count ?? 1) * (context.count ?? 1);
+        const register =
+          context.operator.name === "change"
+            ? context.editor.change(noun, count)
+            : deleteForRegister(context, noun, count);
 
         // Change enters Insert mode; after c$/C, place the caret after the
         // remaining last character instead of before it.

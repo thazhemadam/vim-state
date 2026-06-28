@@ -149,10 +149,15 @@ export function resolveMotion(
 export function resolveOperatorRange(
   editor: VimEditorHost,
   noun: VimNoun,
+  count = 1,
 ): VimRange | undefined {
   if (noun === "line") {
     const start = cursor(editor);
-    return { type: "linewise", startLine: start.line, endLine: start.line };
+    return {
+      type: "linewise",
+      startLine: start.line,
+      endLine: Math.min(start.line + count - 1, editor.getLines().length - 1),
+    };
   }
   return resolveMotion(editor, noun)?.range;
 }
@@ -173,6 +178,25 @@ export function applyDeleteRange(
       return register;
     case "linewise":
       return applyLineDelete(editor, range, register);
+  }
+}
+
+/** Apply a resolved operator range as a change and return the removed register text. */
+export function applyChangeRange(
+  editor: VimEditorHost,
+  range: VimRange,
+): VimRegister {
+  const register = registerForRange(editor.getLines(), range);
+  switch (range.type) {
+    case "charwise":
+      moveCursorToPosition(editor, range.start);
+      deleteForward(
+        editor,
+        deleteDistance(editor.getLines(), range.start, range.end),
+      );
+      return register;
+    case "linewise":
+      return applyLineChange(editor, range, register);
   }
 }
 
@@ -218,6 +242,25 @@ function applyLineDelete(
     editor,
     clampedPosition(editor, { line, col: currentCol }),
   );
+  return register;
+}
+
+/** Clear a linewise range to one empty row, which becomes the Insert target. */
+function applyLineChange(
+  editor: VimEditorHost,
+  range: Extract<VimRange, { type: "linewise" }>,
+  register: VimRegister,
+): VimRegister {
+  moveCursorToPosition(editor, { line: range.startLine, col: 0 });
+  deleteForward(editor, currentLine(editor).length);
+
+  for (let line = range.startLine; line < range.endLine; ++line) {
+    if (cursor(editor).line < editor.getLines().length - 1) {
+      editor.sendInputToEditor(DELETE_FORWARD);
+    }
+    deleteForward(editor, currentLine(editor).length);
+  }
+
   return register;
 }
 

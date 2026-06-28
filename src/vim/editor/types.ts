@@ -55,6 +55,7 @@ export interface VimEditorApi {
   placeCaretAfterCursor(): void;
   placeCaretAtLineEnd(): void;
   delete(noun: VimNoun): VimRegister | undefined;
+  change(noun: VimNoun, count?: number): VimRegister | undefined;
   put(register: VimRegister, placement: "before" | "after"): void;
   replaceCharUnderCursor(char: string): void;
   clampCursorColumn(): void;
