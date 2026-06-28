@@ -24,6 +24,7 @@ function createVimCore(calls: string[] = []) {
     moveCursorToFirstNonBlank: () => calls.push("moveCursorToFirstNonBlank"),
     moveCursorToNextWord: () => calls.push("moveCursorToNextWord"),
     moveCursorToPreviousWord: () => calls.push("moveCursorToPreviousWord"),
+    moveCursorToEndOfWord: () => calls.push("moveCursorToEndOfWord"),
     insertLineBelow: () => calls.push("insertLineBelow"),
     insertLineAbove: () => calls.push("insertLineAbove"),
     placeCaretAtLineStart: () => calls.push("placeCaretAtLineStart"),

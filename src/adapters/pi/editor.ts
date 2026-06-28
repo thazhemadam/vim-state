@@ -115,6 +115,18 @@ export class VimPiEditor extends CustomEditor implements VimEditor {
     this.moveCursorToPosition(target);
   }
 
+  /**
+   * Move to the end of the current or next word-like run.
+   *
+   * This implements the initial `e` subset using the same run definition as
+   * `w`. From inside a run it lands on that run's last character; from the last
+   * character of a run it skips to the next run's last character.
+   */
+  moveCursorToEndOfWord(): void {
+    const target = endOfWordPosition(this.getLines(), this.cursor);
+    this.moveCursorToPosition(target);
+  }
+
   /** Insert an empty line below the current line and leave the caret on it. */
   insertLineBelow(): void {
     super.handleInput(LINE_END);
@@ -313,7 +325,6 @@ function nextWordPosition(
   return { line: lastLine, col: normalMaxColumn(lines[lastLine] ?? "") };
 }
 
-/** Classify characters for the initial word-motion subset. */
 /**
  * Return the previous Normal-mode `b` target.
  *
@@ -347,6 +358,43 @@ function previousWordPosition(
   return { line: 0, col: 0 };
 }
 
+/**
+ * Return the next Normal-mode `e` target.
+ *
+ * Uses the same small run model as `nextWordPosition()`. From whitespace it
+ * skips forward to the next run; from a run it lands on that run's end unless
+ * already there, in which case it advances to the next run's end.
+ */
+function endOfWordPosition(
+  lines: string[],
+  cursor: { line: number; col: number },
+): { line: number; col: number } {
+  for (let lineIndex = cursor.line; lineIndex < lines.length; lineIndex += 1) {
+    const line = lines[lineIndex] ?? "";
+    let col = lineIndex === cursor.line ? cursor.col : 0;
+
+    while (col < line.length) {
+      while (col < line.length && isWhitespace(line[col]!)) col += 1;
+      if (col >= line.length) break;
+
+      const type = charType(line[col]!);
+      let end = col;
+      while (end + 1 < line.length && charType(line[end + 1]!) === type) {
+        end += 1;
+      }
+
+      if (lineIndex !== cursor.line || end !== cursor.col) {
+        return { line: lineIndex, col: end };
+      }
+      col = end + 1;
+    }
+  }
+
+  const lastLine = Math.max(lines.length - 1, 0);
+  return { line: lastLine, col: normalMaxColumn(lines[lastLine] ?? "") };
+}
+
+/** Classify characters for the initial word-motion subset. */
 function charType(char: string): "word" | "punct" | "space" {
   if (isWhitespace(char)) return "space";
   return /[A-Za-z0-9_]/.test(char) ? "word" : "punct";
