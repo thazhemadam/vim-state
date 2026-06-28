@@ -6,7 +6,11 @@ import {
   LINE_START,
   NEWLINE,
 } from "./constants.js";
-import { applyDeleteRange, resolveMotion } from "./operators.js";
+import {
+  applyDeleteRange,
+  resolveMotion,
+  resolveOperatorRange,
+} from "./operators.js";
 import type {
   Constructor,
   VimEditorApi,
@@ -77,14 +81,19 @@ export function VimEditor<TBase extends Constructor<VimEditorHost>>(
       this.sendInputToEditor(LINE_END);
     }
 
-    /** Apply a supported operator noun as a delete and return the deleted text for registers. */
+    /**
+     * Apply a supported operator noun as a delete and return the deleted text.
+     *
+     * Operator nouns include real motions (`dw`) plus linewise nouns from doubled
+     * operators (`dd`), so range resolution is separate from cursor movement.
+     */
     delete(noun: VimNoun): VimRegister | undefined {
-      const result = resolveMotion(this, noun);
-      if (!result) {
+      const range = resolveOperatorRange(this, noun);
+      if (!range) {
         return undefined;
       }
 
-      const register = applyDeleteRange(this, result.range);
+      const register = applyDeleteRange(this, range);
 
       // `left` (X/dh) deletes by moving to the previous character and deleting
       // forward, so it already lands on the right Normal-mode column,

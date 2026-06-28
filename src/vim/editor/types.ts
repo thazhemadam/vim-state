@@ -23,18 +23,24 @@ export type VimRegister = {
   type: "charwise" | "linewise";
 };
 
-/** Motion or text-object-like noun an operator can act on. */
+/** Motion or operator-range noun an operator can act on (`line` backs doubled operators like `dd`). */
 export type VimNoun = VimMotion | "line";
 
 /** Zero-based editor position. `col` is a UTF-16/string column for now. */
 export type VimPosition = { line: number; col: number };
 
-/** Minimal internal range model used to apply delete operations. */
+/**
+ * Minimal internal operator range model.
+ *
+ * Charwise ranges are cursor-position spans. Linewise ranges are whole row spans
+ * because Vim linewise operations ignore cursor column and carry different
+ * register/cursor semantics.
+ */
 export type VimRange =
   | { type: "charwise"; start: VimPosition; end: VimPosition }
   | { type: "linewise"; startLine: number; endLine: number };
 
-/** Resolved noun data: where motion lands and what range an operator affects. */
+/** Resolved real motion data: where motion lands and what range that motion covers for operators. */
 export type VimMotionResult = {
   range: VimRange;
   destination: VimPosition;

@@ -1,6 +1,7 @@
-import { DELETE_FORWARD } from "./constants.js";
+import { DELETE_BACKWARD, DELETE_FORWARD } from "./constants.js";
 import type {
   VimEditorHost,
+  VimMotion,
   VimMotionResult,
   VimNoun,
   VimPosition,
@@ -19,13 +20,12 @@ import {
 } from "./utils.js";
 
 /**
- * Resolve a motion/text noun into both pieces consumers need:
- * - `destination` for plain Normal-mode movement
- * - `range` for operators such as delete
+ * Resolve a real cursor motion into both meanings Vim assigns to motions:
+ * where plain movement lands, and what range an operator using that motion covers.
  */
 export function resolveMotion(
   editor: VimEditorHost,
-  noun: VimNoun,
+  noun: VimMotion,
 ): VimMotionResult | undefined {
   const start = cursor(editor);
   const line = currentLine(editor);
@@ -137,16 +137,27 @@ export function resolveMotion(
         destination,
       };
     }
-
-    case "line":
-      return {
-        range: { type: "linewise", startLine: start.line, endLine: start.line },
-        destination: { line: start.line, col: 0 },
-      };
   }
 }
 
-/** Apply a delete range and return the text it removed for the unnamed register. */
+/**
+ * Resolve an operator noun into the buffer range it covers.
+ *
+ * Motions reuse their motion range. `line` is not a cursor motion; it names the
+ * current-line range for doubled operators such as `dd` and `cc`.
+ */
+export function resolveOperatorRange(
+  editor: VimEditorHost,
+  noun: VimNoun,
+): VimRange | undefined {
+  if (noun === "line") {
+    const start = cursor(editor);
+    return { type: "linewise", startLine: start.line, endLine: start.line };
+  }
+  return resolveMotion(editor, noun)?.range;
+}
+
+/** Apply a resolved operator range as a delete and return the removed register text. */
 export function applyDeleteRange(
   editor: VimEditorHost,
   range: VimRange,
@@ -161,15 +172,53 @@ export function applyDeleteRange(
       );
       return register;
     case "linewise":
-      moveCursorToPosition(editor, { line: range.startLine, col: 0 });
-      for (let line = range.startLine; line <= range.endLine; ++line) {
-        deleteForward(editor, currentLine(editor).length);
-        if (range.startLine < editor.getLines().length - 1) {
-          editor.sendInputToEditor(DELETE_FORWARD);
-        }
-      }
-      return register;
+      return applyLineDelete(editor, range, register);
   }
+}
+
+/**
+ * Delete whole rows for a linewise range.
+ *
+ * The host editor only exposes character deletion, so deleting the original EOF
+ * row needs one backward delete to remove the leftover empty line. After rows are
+ * removed, Vim keeps the old column where possible and clamps on shorter lines.
+ */
+function applyLineDelete(
+  editor: VimEditorHost,
+  range: Extract<VimRange, { type: "linewise" }>,
+  register: VimRegister,
+): VimRegister {
+  const currentCol = cursor(editor).col;
+
+  const lastLine = editor.getLines().length - 1;
+  const deletesLastLine = range.endLine >= lastLine;
+  const lineCount = range.endLine - range.startLine + 1;
+
+  // Start at column 0 because linewise delete removes rows, not a span from the
+  // current cursor column.
+  moveCursorToPosition(editor, { line: range.startLine, col: 0 });
+  for (let i = 0; i < lineCount; ++i) {
+    deleteForward(editor, currentLine(editor).length);
+    if (cursor(editor).line < editor.getLines().length - 1) {
+      editor.sendInputToEditor(DELETE_FORWARD);
+    }
+  }
+
+  if (deletesLastLine && range.startLine > 0) {
+    // Deleting the final row leaves an empty last line; backspace removes that
+    // row by joining it into the previous surviving line.
+    editor.sendInputToEditor(DELETE_BACKWARD);
+  }
+
+  // Land on the next surviving row, unless the deleted range reached EOF; then
+  // land on the previous row. Keep the original column where possible.
+  const targetLine = deletesLastLine ? range.startLine - 1 : range.startLine;
+  const line = Math.max(targetLine, 0);
+  moveCursorToPosition(
+    editor,
+    clampedPosition(editor, { line, col: currentCol }),
+  );
+  return register;
 }
 
 /** Build the register metadata for a range without mutating editor state. */
