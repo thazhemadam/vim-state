@@ -24,7 +24,7 @@ class PiEditorHost extends CustomEditor implements VimEditorHost {
 
 export class VimPiEditor extends VimEditor(PiEditorHost) {
   private readonly vim: ActorRefFrom<typeof vimMachine>;
-  private cursorStyle: "bar" | "block" | undefined;
+  private cursorStyle: VimCursorStyle | undefined;
   private readonly appKeybindings: KeybindingsManager;
 
   constructor(
@@ -73,7 +73,7 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
       return lines;
     }
 
-    if (getVimMode(this.vimSnapshot) === "insert") {
+    if (vimCursorStyle(this.vimSnapshot) !== "block") {
       removeReverseVideoCursor(lines);
     }
 
@@ -105,18 +105,36 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
 
   /** Sync terminal cursor shape with Vim mode, avoiding duplicate escape writes. */
   private syncCursorStyle(): void {
-    const style = getVimMode(this.vimSnapshot) === "insert" ? "bar" : "block";
+    const style = vimCursorStyle(this.vimSnapshot);
     if (this.cursorStyle === style) {
       return;
     }
     this.cursorStyle = style;
-    this.tui.terminal.write(style === "bar" ? "\x1b[6 q" : "\x1b[2 q");
+    this.tui.terminal.write(CURSOR_SHAPE[style]);
   }
+}
+
+/** Terminal cursor shapes used to mirror the current Vim parser state. */
+type VimCursorStyle = "bar" | "block" | "underline";
+
+/** DECSCUSR escape sequences for the cursor shapes supported by Pi's terminal. */
+const CURSOR_SHAPE: Record<VimCursorStyle, string> = {
+  bar: "\x1b[6 q",
+  block: "\x1b[2 q",
+  underline: "\x1b[4 q",
+};
+
+/** Return the hardware cursor shape for the current Vim machine snapshot. */
+function vimCursorStyle(snapshot: VimSnapshot): VimCursorStyle {
+  if (snapshot.value === "operator-pending") {
+    return "underline";
+  }
+  return getVimMode(snapshot) === "insert" ? "bar" : "block";
 }
 
 const REVERSE_VIDEO_CURSOR = /\x1b\[7m([^\x1b]*)\x1b\[0m/;
 
-/** Remove Pi's reverse-video cursor highlight when Insert mode uses the hardware bar cursor. */
+/** Remove Pi's fake block (reverse-video) cursor when a non-block hardware cursor is visible. */
 function removeReverseVideoCursor(lines: string[]): void {
   for (let i = 0; i < lines.length; i += 1) {
     if (!REVERSE_VIDEO_CURSOR.test(lines[i])) {

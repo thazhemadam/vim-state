@@ -661,7 +661,7 @@ test("VimPiEditor renders operator-pending mode label", () => {
   assert.match(editor.render(40).at(-1) ?? "", /-- OPERATOR --$/);
 });
 
-test("VimPiEditor uses hardware bar cursor in insert and fake block cursor in normal", () => {
+test("VimPiEditor uses hardware cursors for insert and operator-pending", () => {
   const writes: string[] = [];
   const editor = createEditor(writes);
 
@@ -675,6 +675,10 @@ test("VimPiEditor uses hardware bar cursor in insert and fake block cursor in no
   editor.handleInput(ESC);
   assert.deepEqual(writes, ["\x1b[6 q", "\x1b[2 q"]);
   assert.match(editor.render(40).join("\n"), /\x1b\[7mc\x1b\[0m/);
+
+  editor.handleInput("d");
+  assert.deepEqual(writes, ["\x1b[6 q", "\x1b[2 q", "\x1b[4 q"]);
+  assert.doesNotMatch(editor.render(40).join("\n"), /\x1b\[7m/);
 });
 
 function assertEditor(
