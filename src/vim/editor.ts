@@ -10,6 +10,7 @@ export interface VimEditor {
   moveCursorToFirstNonBlank(): void;
   moveCursorToNextWord(): void;
   moveCursorToPreviousWord(): void;
+  moveCursorToEndOfWord(): void;
   insertLineBelow(): void;
   insertLineAbove(): void;
   placeCaretAtLineStart(): void;

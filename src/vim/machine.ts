@@ -27,6 +27,7 @@ export const vimMachine = setup({
       context.editor.moveCursorToNextWord(),
     moveCursorToPreviousWord: ({ context }) =>
       context.editor.moveCursorToPreviousWord(),
+    moveCursorToEndOfWord: ({ context }) => context.editor.moveCursorToEndOfWord(),
     insertLineBelow: ({ context }) => context.editor.insertLineBelow(),
     insertLineAbove: ({ context }) => context.editor.insertLineAbove(),
     placeCaretAtLineStart: ({ context }) =>
@@ -177,6 +178,10 @@ export const vimMachine = setup({
           {
             guard: { type: "keyIs", params: { key: "b" } },
             actions: { type: "moveCursorToPreviousWord" },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "e" } },
+            actions: { type: "moveCursorToEndOfWord" },
           },
           {
             guard: { type: "keyIs", params: { key: "x" } },
