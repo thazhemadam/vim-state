@@ -1,3 +1,6 @@
+/** Target accepted by line-jump commands. Numbers are 1-based like Vim counts. */
+export type VimLineTarget = number | "first" | "last";
+
 /** Supported cursor motions understood by the current Vim editor core. */
 export type VimMotion =
   | "left"
@@ -55,6 +58,7 @@ export interface VimEditorApi {
   insertLineBelow(): void;
   insertLineAbove(): void;
   joinLines(count?: number): void;
+  goToLine(line: VimLineTarget): void;
   placeCaretAtLineStart(): void;
   placeCaretAfterCursor(): void;
   placeCaretAtLineEnd(): void;

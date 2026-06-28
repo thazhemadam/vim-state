@@ -20,6 +20,7 @@ import type {
   Constructor,
   VimEditorApi,
   VimEditorHost,
+  VimLineTarget,
   VimMotion,
   VimMotionResult,
   VimNoun,
@@ -32,6 +33,7 @@ import { firstNonBlankColumn, normalMaxColumn, toggledCase } from "./utils.js";
 export type {
   VimEditorApi,
   VimEditorHost,
+  VimLineTarget,
   VimMotion,
   VimNoun,
   VimOperator,
@@ -72,6 +74,20 @@ class VimEditorCore implements VimEditorApi {
     for (let i = 1; i < Math.max(count, 2); ++i) {
       this.joinNextLine();
     }
+  }
+
+  /** Move to a target line, using 1-based line numbers for counted Vim commands. */
+  goToLine(line: VimLineTarget): void {
+    const targetLine =
+      line === "first" ? 0 : line === "last" ? this.lines.length - 1 : line - 1;
+    const clampedLine = Math.min(
+      Math.max(targetLine, 0),
+      Math.max(this.lines.length - 1, 0),
+    );
+    this.moveCursorToPosition({
+      line: clampedLine,
+      col: firstNonBlankColumn(this.lines[clampedLine] ?? ""),
+    });
   }
 
   /** Place the Insert caret at the start of the current line. */

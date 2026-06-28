@@ -1,7 +1,12 @@
 import { assign, setup, type SnapshotFrom } from "xstate";
 
 import { type VimContext, type VimInput } from "./context.js";
-import type { VimMotion, VimNoun, VimOperator } from "./editor.js";
+import type {
+  VimLineTarget,
+  VimMotion,
+  VimNoun,
+  VimOperator,
+} from "./editor.js";
 import { nounForKey } from "./editor.js";
 import type { VimEvent } from "./events.js";
 import { initialVimMode } from "./state.js";
@@ -41,6 +46,8 @@ export const vimMachine = setup({
     insertLineBelow: ({ context }) => context.editor.insertLineBelow(),
     insertLineAbove: ({ context }) => context.editor.insertLineAbove(),
     joinLines: ({ context }) => context.editor.joinLines(context.count ?? 2),
+    goToLine: ({ context }, params: { line: VimLineTarget }) =>
+      context.editor.goToLine(context.count ?? params.line),
     placeCaretAtLineStart: ({ context }) =>
       context.editor.placeCaretAtLineStart(),
     applyPendingOperatorToEventNoun: assign({
@@ -156,6 +163,26 @@ export const vimMachine = setup({
         ],
       },
     },
+    "g-prefix": {
+      on: {
+        KEY: [
+          {
+            guard: { type: "keyIs", params: { key: "escape" } },
+            target: "normal",
+            actions: { type: "clearCount" },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "g" } },
+            target: "normal",
+            actions: [
+              { type: "goToLine", params: { line: "first" } },
+              { type: "clearCount" },
+            ],
+          },
+          { target: "normal", actions: { type: "clearCount" } },
+        ],
+      },
+    },
     "operator-pending": {
       on: {
         KEY: [
@@ -268,6 +295,17 @@ export const vimMachine = setup({
               { type: "placeCaretAfterCursor" },
               { type: "clearCount" },
             ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "G" } },
+            actions: [
+              { type: "goToLine", params: { line: "last" } },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "g" } },
+            target: "g-prefix",
           },
           {
             guard: { type: "keyIs", params: { key: "D" } },

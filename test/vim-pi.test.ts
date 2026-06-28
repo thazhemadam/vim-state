@@ -114,6 +114,30 @@ test("VimPiEditor applies Normal-mode cursor navigation", () => {
       keys: [ESC, "l", "0", "h", "k", "l", "l"],
       cursor: { line: 0, col: 1 },
     },
+    {
+      name: "G moves to the last line first non-blank",
+      text: "one\ntwo\n  three",
+      keys: [ESC, "k", "k", "G"],
+      cursor: { line: 2, col: 2 },
+    },
+    {
+      name: "gg moves to the first line first non-blank",
+      text: "  one\ntwo\nthree",
+      keys: [ESC, "g", "g"],
+      cursor: { line: 0, col: 2 },
+    },
+    {
+      name: "counted G moves to the counted line",
+      text: "one\n  two\nthree",
+      keys: [ESC, "1", "G"],
+      cursor: { line: 0, col: 0 },
+    },
+    {
+      name: "counted gg moves to the counted line",
+      text: "one\n  two\nthree",
+      keys: [ESC, "2", "g", "g"],
+      cursor: { line: 1, col: 2 },
+    },
   ] as const) {
     const editor = createEditorWithText(spec.text);
     play(editor, spec.keys);
