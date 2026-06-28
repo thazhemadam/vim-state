@@ -103,6 +103,18 @@ export class VimPiEditor extends CustomEditor implements VimEditor {
     this.moveCursorToPosition(target);
   }
 
+  /**
+   * Move to the start of the previous word-like run.
+   *
+   * This implements the initial `b` subset using the same run definition as
+   * `w`. From inside a run it lands on that run's first character; from the
+   * first character of a run it skips to the previous run.
+   */
+  moveCursorToPreviousWord(): void {
+    const target = previousWordPosition(this.getLines(), this.cursor);
+    this.moveCursorToPosition(target);
+  }
+
   /** Insert an empty line below the current line and leave the caret on it. */
   insertLineBelow(): void {
     super.handleInput(LINE_END);
@@ -302,6 +314,39 @@ function nextWordPosition(
 }
 
 /** Classify characters for the initial word-motion subset. */
+/**
+ * Return the previous Normal-mode `b` target.
+ *
+ * Uses the same small run model as `nextWordPosition()`. The only special case
+ * is starting at the first character of a run: `b` skips that run and lands on
+ * the previous one instead of staying in place.
+ */
+function previousWordPosition(
+  lines: string[],
+  cursor: { line: number; col: number },
+): { line: number; col: number } {
+  for (let lineIndex = cursor.line; lineIndex >= 0; lineIndex -= 1) {
+    const line = lines[lineIndex] ?? "";
+    let col = lineIndex === cursor.line ? cursor.col : line.length - 1;
+
+    while (col >= 0) {
+      while (col >= 0 && isWhitespace(line[col]!)) col -= 1;
+      if (col < 0) break;
+
+      const type = charType(line[col]!);
+      let start = col;
+      while (start > 0 && charType(line[start - 1]!) === type) start -= 1;
+
+      if (lineIndex !== cursor.line || start !== cursor.col) {
+        return { line: lineIndex, col: start };
+      }
+      col = start - 1;
+    }
+  }
+
+  return { line: 0, col: 0 };
+}
+
 function charType(char: string): "word" | "punct" | "space" {
   if (isWhitespace(char)) return "space";
   return /[A-Za-z0-9_]/.test(char) ? "word" : "punct";
