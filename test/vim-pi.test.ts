@@ -252,6 +252,28 @@ test("VimPiEditor applies Normal-mode w word motion", () => {
   assert.deepEqual(editor.getCursor(), { line: 0, col: 9 });
   editor.handleInput("w");
   assert.deepEqual(editor.getCursor(), { line: 1, col: 2 });
+
+  const lineEditor = createEditor();
+  lineEditor.setText("ok\nhello\nworld");
+  lineEditor.handleInput("\x1b");
+  lineEditor.handleInput("k");
+  lineEditor.handleInput("k");
+  lineEditor.handleInput("0");
+
+  lineEditor.handleInput("w");
+  assert.deepEqual(lineEditor.getCursor(), { line: 1, col: 0 });
+  lineEditor.handleInput("w");
+  assert.deepEqual(lineEditor.getCursor(), { line: 2, col: 0 });
+
+  const singleLineEditor = createEditor();
+  singleLineEditor.setText("ok hello world");
+  singleLineEditor.handleInput("\x1b");
+  singleLineEditor.handleInput("0");
+
+  singleLineEditor.handleInput("w");
+  assert.deepEqual(singleLineEditor.getCursor(), { line: 0, col: 3 });
+  singleLineEditor.handleInput("w");
+  assert.deepEqual(singleLineEditor.getCursor(), { line: 0, col: 9 });
 });
 
 test("VimPiEditor applies Normal-mode b word motion", () => {
@@ -288,6 +310,23 @@ test("VimPiEditor applies Normal-mode e word motion", () => {
   assert.deepEqual(editor.getCursor(), { line: 0, col: 11 });
   editor.handleInput("e");
   assert.deepEqual(editor.getCursor(), { line: 1, col: 4 });
+});
+
+test("VimPiEditor matches canonical single-line word motion cases", () => {
+  for (const [text, col, key, expectedCol] of [
+    ["foo bar", 0, "w", 4],
+    ["foo-bar", 3, "w", 4],
+    ["foo   bar", 0, "w", 6],
+    ["foobar", 0, "e", 5],
+    ["foo bar", 2, "e", 6],
+    ["foo bar", 4, "b", 0],
+    ["foo bar", 5, "b", 4],
+    ["foo   bar", 6, "b", 0],
+  ] as const) {
+    const editor = createNormalLineEditor(text, col);
+    editor.handleInput(key);
+    assert.deepEqual(editor.getCursor(), { line: 0, col: expectedCol });
+  }
 });
 
 test("VimPiEditor passes configured app shortcuts through in Normal mode", () => {
@@ -440,6 +479,15 @@ test("VimPiEditor uses hardware bar cursor in insert and fake block cursor in no
   assert.deepEqual(writes, ["\x1b[6 q", "\x1b[2 q"]);
   assert.match(editor.render(40).join("\n"), /\x1b\[7mc\x1b\[0m/);
 });
+
+function createNormalLineEditor(text: string, col: number): VimPiEditor {
+  const editor = createEditor();
+  editor.setText(text);
+  editor.handleInput("\x1b");
+  editor.handleInput("0");
+  for (let i = 0; i < col; i += 1) editor.handleInput("l");
+  return editor;
+}
 
 function createEditor(
   writes: string[] = [],

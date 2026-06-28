@@ -312,7 +312,11 @@ function nextWordPosition(
     const line = lines[lineIndex] ?? "";
     let col = lineIndex === cursor.line ? cursor.col : 0;
 
-    if (col < line.length && !isWhitespace(line[col]!)) {
+    if (
+      lineIndex === cursor.line &&
+      col < line.length &&
+      !isWhitespace(line[col]!)
+    ) {
       const type = charType(line[col]!);
       while (col < line.length && charType(line[col]!) === type) col += 1;
     }
