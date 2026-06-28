@@ -9,6 +9,7 @@ import {
 import {
   applyChangeRange,
   applyDeleteRange,
+  applyYankRange,
   resolveMotion,
   resolveOperatorRange,
 } from "./operators.js";
@@ -96,6 +97,11 @@ export function VimEditor<TBase extends Constructor<VimEditorHost>>(
     /** Apply a supported operator noun as a change and return the changed text. */
     change(noun: VimNoun, count = 1): VimRegister | undefined {
       return applyOperator(this, noun, count, applyChangeRange);
+    }
+
+    /** Store a supported operator noun in the unnamed register. */
+    yankToRegister(noun: VimNoun, count = 1): VimRegister | undefined {
+      return applyOperator(this, noun, count, applyYankRange);
     }
 
     /** Put unnamed-register text before/after the cursor, or above/below the current line. */

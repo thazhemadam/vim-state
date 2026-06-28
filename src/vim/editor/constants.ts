@@ -14,6 +14,7 @@ export const DELETE_BACKWARD = "\x7f"; // Backspace
 export const OPERATOR_KEY: Record<VimOperator["name"], string> = {
   delete: "d",
   change: "c",
+  yank: "y",
 };
 
 export const NOUN_BY_KEY: Record<string, VimMotion> = {

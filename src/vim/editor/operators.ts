@@ -217,6 +217,14 @@ export function applyChangeRange(
   }
 }
 
+/** Store a resolved operator range without mutating editor state. */
+export function applyYankRange(
+  editor: VimEditorHost,
+  range: VimRange,
+): VimRegister {
+  return registerForRange(editor.getLines(), range);
+}
+
 /**
  * Delete whole rows for a linewise range.
  *

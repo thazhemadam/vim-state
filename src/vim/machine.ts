@@ -53,7 +53,9 @@ export const vimMachine = setup({
         const register =
           context.operator.name === "change"
             ? context.editor.change(noun, count)
-            : context.editor.delete(noun, count);
+            : context.operator.name === "delete"
+              ? context.editor.delete(noun, count)
+              : context.editor.yankToRegister(noun, count);
 
         // Change enters Insert mode; after c$/C, place the caret after the
         // remaining last character instead of before it.
@@ -183,6 +185,15 @@ export const vimMachine = setup({
             ],
           },
           {
+            guard: { type: "keyIsOperatorNoun", params: { name: "yank" } },
+            target: "normal",
+            actions: [
+              { type: "applyPendingOperatorToEventNoun" },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
             target: "normal",
             actions: [{ type: "clearOperator" }, { type: "clearCount" }],
           },
@@ -241,6 +252,11 @@ export const vimMachine = setup({
             guard: { type: "keyIs", params: { key: "c" } },
             target: "operator-pending",
             actions: { type: "setOperator", params: { name: "change" } },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "y" } },
+            target: "operator-pending",
+            actions: { type: "setOperator", params: { name: "yank" } },
           },
           {
             guard: { type: "keyIs", params: { key: "C" } },

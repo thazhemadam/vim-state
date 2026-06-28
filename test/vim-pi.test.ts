@@ -509,6 +509,44 @@ test("VimPiEditor stores deleted text in the unnamed register", () => {
   }
 });
 
+test("VimPiEditor stores yanked text in the unnamed register", () => {
+  for (const spec of [
+    {
+      name: "yw stores a charwise register without deleting text",
+      text: "one two",
+      keys: [ESC, "0", "y", "w"],
+      textAfter: "one two",
+      cursor: { line: 0, col: 0 },
+      register: { text: "one ", type: "charwise" },
+    },
+    {
+      name: "yy stores a linewise register",
+      text: "one\ntwo",
+      keys: [ESC, "k", "y", "y"],
+      textAfter: "one\ntwo",
+      cursor: { line: 0, col: 2 },
+      register: { text: "one\n", type: "linewise" },
+    },
+    {
+      name: "2yw stores the full counted range",
+      text: "one two three",
+      keys: [ESC, "0", "2", "y", "w"],
+      textAfter: "one two three",
+      cursor: { line: 0, col: 0 },
+      register: { text: "one two ", type: "charwise" },
+    },
+  ] as const) {
+    const editor = createEditorWithText(spec.text);
+    play(editor, spec.keys);
+    assertEditor(
+      editor,
+      { text: spec.textAfter, cursor: spec.cursor, mode: "normal" },
+      spec.name,
+    );
+    assertRegister(editor, spec.register, spec.name);
+  }
+});
+
 test("VimPiEditor puts unnamed register text", () => {
   for (const spec of [
     {

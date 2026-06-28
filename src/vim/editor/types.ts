@@ -13,7 +13,7 @@ export type VimMotion =
 
 /** Pending operator plus the count captured before the operator key. */
 export type VimOperator = {
-  name: "delete" | "change";
+  name: "delete" | "change" | "yank";
   count?: number;
 };
 
@@ -56,6 +56,7 @@ export interface VimEditorApi {
   placeCaretAtLineEnd(): void;
   delete(noun: VimNoun, count?: number): VimRegister | undefined;
   change(noun: VimNoun, count?: number): VimRegister | undefined;
+  yankToRegister(noun: VimNoun, count?: number): VimRegister | undefined;
   put(register: VimRegister, placement: "before" | "after"): void;
   replaceCharUnderCursor(char: string): void;
   clampCursorColumn(): void;
