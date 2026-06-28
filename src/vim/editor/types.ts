@@ -51,6 +51,7 @@ export interface VimEditorApi {
   move(motion: VimMotion): void;
   insertLineBelow(): void;
   insertLineAbove(): void;
+  joinLines(count?: number): void;
   placeCaretAtLineStart(): void;
   placeCaretAfterCursor(): void;
   placeCaretAtLineEnd(): void;

@@ -40,6 +40,7 @@ export const vimMachine = setup({
     },
     insertLineBelow: ({ context }) => context.editor.insertLineBelow(),
     insertLineAbove: ({ context }) => context.editor.insertLineAbove(),
+    joinLines: ({ context }) => context.editor.joinLines(context.count ?? 2),
     placeCaretAtLineStart: ({ context }) =>
       context.editor.placeCaretAtLineStart(),
     applyPendingOperatorToEventNoun: assign({
@@ -273,6 +274,10 @@ export const vimMachine = setup({
               { type: "delete", params: { noun: "lineEnd" } },
               { type: "clearCount" },
             ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "J" } },
+            actions: [{ type: "joinLines" }, { type: "clearCount" }],
           },
           {
             guard: { type: "keyIs", params: { key: "o" } },

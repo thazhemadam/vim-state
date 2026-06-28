@@ -67,6 +67,13 @@ class VimEditorCore implements VimEditorApi {
     this.host.sendInputToEditor(ARROW_UP);
   }
 
+  /** Join the current line with following lines, inserting one separator space where needed. */
+  joinLines(count = 2): void {
+    for (let i = 1; i < Math.max(count, 2); ++i) {
+      this.joinNextLine();
+    }
+  }
+
   /** Place the Insert caret at the start of the current line. */
   placeCaretAtLineStart(): void {
     this.host.sendInputToEditor(LINE_START);
@@ -419,6 +426,27 @@ class VimEditorCore implements VimEditorApi {
     }
 
     return register;
+  }
+
+  /** Join the next line into the current line. */
+  private joinNextLine(): void {
+    if (this.cursor.line >= this.lines.length - 1) {
+      return;
+    }
+
+    const line = this.currentLine;
+    const nextLine = this.lines[this.cursor.line + 1] ?? "";
+    const indent = /^\s*/.exec(nextLine)?.[0].length ?? 0;
+    const needsSpace =
+      line.length > 0 && nextLine.trimStart().length > 0 && !/\s$/.test(line);
+
+    this.moveCursorToPosition({ line: this.cursor.line, col: line.length });
+    this.host.sendInputToEditor(DELETE_FORWARD);
+    this.deleteForward(indent);
+    if (needsSpace) {
+      this.host.sendInputToEditor(" ");
+      this.host.sendInputToEditor(ARROW_LEFT);
+    }
   }
 
   /** Move to a zero-based position using host editor cursor primitives. */

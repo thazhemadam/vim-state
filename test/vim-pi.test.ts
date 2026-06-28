@@ -935,6 +935,40 @@ test("VimPiEditor applies Normal-mode character deletion", () => {
   }
 });
 
+test("VimPiEditor applies Normal-mode line join", () => {
+  for (const spec of [
+    {
+      name: "J joins the next line with one space",
+      text: "one\ntwo",
+      keys: [ESC, "k", "J"],
+      textAfter: "one two",
+      cursor: { line: 0, col: 3 },
+    },
+    {
+      name: "J removes indentation from the joined line",
+      text: "one\n  two",
+      keys: [ESC, "k", "J"],
+      textAfter: "one two",
+      cursor: { line: 0, col: 3 },
+    },
+    {
+      name: "counted J joins multiple following lines",
+      text: "one\ntwo\nthree",
+      keys: [ESC, "k", "k", "3", "J"],
+      textAfter: "one two three",
+      cursor: { line: 0, col: 7 },
+    },
+  ] as const) {
+    const editor = createEditorWithText(spec.text);
+    play(editor, spec.keys);
+    assertEditor(
+      editor,
+      { text: spec.textAfter, cursor: spec.cursor, mode: "normal" },
+      spec.name,
+    );
+  }
+});
+
 test("VimPiEditor delegates insert input and ignores unmapped normal printable keys", () => {
   const editor = createEditor();
   play(editor, ["a", "b", "c", ESC, "q", "y", "z", "i", "X"]);
