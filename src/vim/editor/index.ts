@@ -403,6 +403,15 @@ class VimEditorCore implements VimEditorApi {
       };
     }
 
+    if (typeof noun === "object") {
+      return this.resolveFindMotion(
+        noun.operation,
+        noun.direction,
+        noun.char,
+        count,
+      )?.range;
+    }
+
     return this.resolveMotion(noun, count)?.range;
   }
 
@@ -422,21 +431,6 @@ class VimEditorCore implements VimEditorApi {
       this.clampCursorColumn();
     }
     return register;
-  }
-
-  /** Apply a resolved range for the requested operator. */
-  private applyRange(
-    operator: VimOperator["name"],
-    range: VimRange,
-  ): VimRegister {
-    switch (operator) {
-      case "change":
-        return this.applyChangeRange(range);
-      case "delete":
-        return this.applyDeleteRange(range);
-      case "yank":
-        return this.registerForRange(range);
-    }
   }
 
   /** Apply a resolved operator range as a delete and return the removed register text. */
@@ -628,4 +622,3 @@ function findCharPosition(
 
   return undefined;
 }
-

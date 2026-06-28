@@ -8,6 +8,7 @@ import type {
   VimMotion,
   VimNoun,
   VimOperator,
+  VimRegister,
 } from "./editor.js";
 import { nounForKey } from "./editor.js";
 import type { VimEvent } from "./events.js";
@@ -40,7 +41,7 @@ export const vimMachine = setup({
       repeat(context, () => context.editor.move(params.motion)),
     moveByEventNoun: ({ context, event }) => {
       const noun = nounForKey(event.key);
-      if (!noun || noun === "line") {
+      if (!noun || noun === "line" || typeof noun === "object") {
         return;
       }
       repeat(context, () => context.editor.move(noun));
@@ -55,6 +56,10 @@ export const vimMachine = setup({
         event.key,
         context.count ?? 1,
       ),
+    applyPendingOperatorToNoun: assign({
+      register: ({ context }, params: { noun: VimNoun }) =>
+        applyPendingOperator(context, params.noun),
+    }),
     insertLineBelow: ({ context }) => context.editor.insertLineBelow(),
     insertLineAbove: ({ context }) => context.editor.insertLineAbove(),
     joinLines: ({ context }) => context.editor.joinLines(context.count ?? 2),
@@ -62,30 +67,6 @@ export const vimMachine = setup({
       context.editor.goToLine(context.count ?? params.line),
     placeCaretAtLineStart: ({ context }) =>
       context.editor.placeCaretAtLineStart(),
-    applyPendingOperatorToEventNoun: assign({
-      register: ({ context, event }) => {
-        const noun = nounForKey(event.key, context.operator);
-        if (!noun || !context.operator) {
-          return context.register;
-        }
-
-        const count = (context.operator.count ?? 1) * (context.count ?? 1);
-        const register =
-          context.operator.name === "change"
-            ? context.editor.change(noun, count)
-            : context.operator.name === "delete"
-              ? context.editor.delete(noun, count)
-              : context.editor.yank(noun, count);
-
-        // Change enters Insert mode; after c$/C, place the caret after the
-        // remaining last character instead of before it.
-        if (context.operator.name === "change" && noun === "lineEnd") {
-          context.editor.placeCaretAfterCursor();
-        }
-
-        return register ?? context.register;
-      },
-    }),
     delete: assign({
       register: ({ context }, params: { noun: VimNoun }) =>
         context.editor.delete(params.noun, context.count ?? 1) ??
@@ -111,6 +92,13 @@ export const vimMachine = setup({
     keyIs: ({ event }, params: { key: string }) => event.key === params.key,
     keyIsPrintable: ({ event }) =>
       Array.from(event.key).length === 1 && event.key >= " ",
+    keyIsPrintableWithOperator: (
+      { context, event },
+      params: { name: VimOperator["name"] },
+    ) =>
+      context.operator?.name === params.name &&
+      Array.from(event.key).length === 1 &&
+      event.key >= " ",
     keyExtendsCount: ({ context, event }) =>
       /^[1-9]$/.test(event.key) ||
       (event.key === "0" && context.count !== undefined),
@@ -267,6 +255,230 @@ export const vimMachine = setup({
         ],
       },
     },
+    "operator-find-forward": {
+      on: {
+        KEY: [
+          {
+            guard: { type: "keyIs", params: { key: "escape" } },
+            target: "normal",
+            actions: [{ type: "clearOperator" }, { type: "clearCount" }],
+          },
+          {
+            guard: {
+              type: "keyIsPrintableWithOperator",
+              params: { name: "change" },
+            },
+            target: "insert",
+            actions: [
+              {
+                type: "applyPendingOperatorToNoun",
+                params: ({ event }) => ({
+                  noun: {
+                    type: "find" as const,
+                    operation: "find" as const,
+                    direction: "forward" as const,
+                    char: event.key,
+                  },
+                }),
+              },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIsPrintable" },
+            target: "normal",
+            actions: [
+              {
+                type: "applyPendingOperatorToNoun",
+                params: ({ event }) => ({
+                  noun: {
+                    type: "find" as const,
+                    operation: "find" as const,
+                    direction: "forward" as const,
+                    char: event.key,
+                  },
+                }),
+              },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            target: "normal",
+            actions: [{ type: "clearOperator" }, { type: "clearCount" }],
+          },
+        ],
+      },
+    },
+    "operator-find-backward": {
+      on: {
+        KEY: [
+          {
+            guard: { type: "keyIs", params: { key: "escape" } },
+            target: "normal",
+            actions: [{ type: "clearOperator" }, { type: "clearCount" }],
+          },
+          {
+            guard: {
+              type: "keyIsPrintableWithOperator",
+              params: { name: "change" },
+            },
+            target: "insert",
+            actions: [
+              {
+                type: "applyPendingOperatorToNoun",
+                params: ({ event }) => ({
+                  noun: {
+                    type: "find" as const,
+                    operation: "find" as const,
+                    direction: "backward" as const,
+                    char: event.key,
+                  },
+                }),
+              },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIsPrintable" },
+            target: "normal",
+            actions: [
+              {
+                type: "applyPendingOperatorToNoun",
+                params: ({ event }) => ({
+                  noun: {
+                    type: "find" as const,
+                    operation: "find" as const,
+                    direction: "backward" as const,
+                    char: event.key,
+                  },
+                }),
+              },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            target: "normal",
+            actions: [{ type: "clearOperator" }, { type: "clearCount" }],
+          },
+        ],
+      },
+    },
+    "operator-till-forward": {
+      on: {
+        KEY: [
+          {
+            guard: { type: "keyIs", params: { key: "escape" } },
+            target: "normal",
+            actions: [{ type: "clearOperator" }, { type: "clearCount" }],
+          },
+          {
+            guard: {
+              type: "keyIsPrintableWithOperator",
+              params: { name: "change" },
+            },
+            target: "insert",
+            actions: [
+              {
+                type: "applyPendingOperatorToNoun",
+                params: ({ event }) => ({
+                  noun: {
+                    type: "find" as const,
+                    operation: "till" as const,
+                    direction: "forward" as const,
+                    char: event.key,
+                  },
+                }),
+              },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIsPrintable" },
+            target: "normal",
+            actions: [
+              {
+                type: "applyPendingOperatorToNoun",
+                params: ({ event }) => ({
+                  noun: {
+                    type: "find" as const,
+                    operation: "till" as const,
+                    direction: "forward" as const,
+                    char: event.key,
+                  },
+                }),
+              },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            target: "normal",
+            actions: [{ type: "clearOperator" }, { type: "clearCount" }],
+          },
+        ],
+      },
+    },
+    "operator-till-backward": {
+      on: {
+        KEY: [
+          {
+            guard: { type: "keyIs", params: { key: "escape" } },
+            target: "normal",
+            actions: [{ type: "clearOperator" }, { type: "clearCount" }],
+          },
+          {
+            guard: {
+              type: "keyIsPrintableWithOperator",
+              params: { name: "change" },
+            },
+            target: "insert",
+            actions: [
+              {
+                type: "applyPendingOperatorToNoun",
+                params: ({ event }) => ({
+                  noun: {
+                    type: "find" as const,
+                    operation: "till" as const,
+                    direction: "backward" as const,
+                    char: event.key,
+                  },
+                }),
+              },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIsPrintable" },
+            target: "normal",
+            actions: [
+              {
+                type: "applyPendingOperatorToNoun",
+                params: ({ event }) => ({
+                  noun: {
+                    type: "find" as const,
+                    operation: "till" as const,
+                    direction: "backward" as const,
+                    char: event.key,
+                  },
+                }),
+              },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            target: "normal",
+            actions: [{ type: "clearOperator" }, { type: "clearCount" }],
+          },
+        ],
+      },
+    },
     "g-prefix": {
       on: {
         KEY: [
@@ -300,10 +512,31 @@ export const vimMachine = setup({
             actions: { type: "appendCount" },
           },
           {
+            guard: { type: "keyIs", params: { key: "f" } },
+            target: "operator-find-forward",
+          },
+          {
+            guard: { type: "keyIs", params: { key: "F" } },
+            target: "operator-find-backward",
+          },
+          {
+            guard: { type: "keyIs", params: { key: "t" } },
+            target: "operator-till-forward",
+          },
+          {
+            guard: { type: "keyIs", params: { key: "T" } },
+            target: "operator-till-backward",
+          },
+          {
             guard: { type: "keyIsOperatorNoun", params: { name: "change" } },
             target: "insert",
             actions: [
-              { type: "applyPendingOperatorToEventNoun" },
+              {
+                type: "applyPendingOperatorToNoun",
+                params: ({ context, event }) => ({
+                  noun: nounForKey(event.key, context.operator)!,
+                }),
+              },
               { type: "clearOperator" },
               { type: "clearCount" },
             ],
@@ -312,7 +545,12 @@ export const vimMachine = setup({
             guard: { type: "keyIsOperatorNoun", params: { name: "delete" } },
             target: "normal",
             actions: [
-              { type: "applyPendingOperatorToEventNoun" },
+              {
+                type: "applyPendingOperatorToNoun",
+                params: ({ context, event }) => ({
+                  noun: nounForKey(event.key, context.operator)!,
+                }),
+              },
               { type: "clearOperator" },
               { type: "clearCount" },
             ],
@@ -321,7 +559,12 @@ export const vimMachine = setup({
             guard: { type: "keyIsOperatorNoun", params: { name: "yank" } },
             target: "normal",
             actions: [
-              { type: "applyPendingOperatorToEventNoun" },
+              {
+                type: "applyPendingOperatorToNoun",
+                params: ({ context, event }) => ({
+                  noun: nounForKey(event.key, context.operator)!,
+                }),
+              },
               { type: "clearOperator" },
               { type: "clearCount" },
             ],
@@ -504,6 +747,32 @@ function repeat(context: VimContext, action: () => void): void {
   for (let i = 0; i < (context.count ?? 1); ++i) {
     action();
   }
+}
+
+/** Apply the pending operator to an already-resolved noun. */
+function applyPendingOperator(
+  context: VimContext,
+  noun: VimNoun,
+): VimRegister | undefined {
+  if (!context.operator) {
+    return context.register;
+  }
+
+  const count = (context.operator.count ?? 1) * (context.count ?? 1);
+  const register =
+    context.operator.name === "change"
+      ? context.editor.change(noun, count)
+      : context.operator.name === "delete"
+        ? context.editor.delete(noun, count)
+        : context.editor.yank(noun, count);
+
+  // Change enters Insert mode; after c$/C, place the caret after the
+  // remaining last character instead of before it.
+  if (context.operator.name === "change" && noun === "lineEnd") {
+    context.editor.placeCaretAfterCursor();
+  }
+
+  return register ?? context.register;
 }
 
 export type VimSnapshot = SnapshotFrom<typeof vimMachine>;

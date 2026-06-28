@@ -7,6 +7,14 @@ export type VimFindOperation = "find" | "till";
 /** Direction for single-character search operations. */
 export type VimFindDirection = "forward" | "backward";
 
+/** Target-character motion resolved after f/F/t/T receives its character. */
+export type VimFindTarget = {
+  type: "find";
+  operation: VimFindOperation;
+  direction: VimFindDirection;
+  char: string;
+};
+
 /** Supported cursor motions understood by the current Vim editor core. */
 export type VimMotion =
   | "left"
@@ -36,7 +44,7 @@ export type VimRegister = {
 };
 
 /** Motion or operator-range noun an operator can act on (`line` backs doubled operators like `dd`). */
-export type VimNoun = VimMotion | "line";
+export type VimNoun = VimMotion | VimFindTarget | "line";
 
 /** Zero-based editor position. `col` is a UTF-16/string column for now. */
 export type VimPosition = { line: number; col: number };

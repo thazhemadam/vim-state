@@ -409,6 +409,20 @@ test("VimPiEditor applies delete operator motions", () => {
       cursor: { line: 0, col: 0 },
     },
     {
+      name: "df deletes through the target character",
+      text: "abacad",
+      keys: [ESC, "0", "d", "f", "c"],
+      textAfter: "ad",
+      cursor: { line: 0, col: 0 },
+    },
+    {
+      name: "dt deletes until before the target character",
+      text: "abacad",
+      keys: [ESC, "0", "d", "t", "c"],
+      textAfter: "cad",
+      cursor: { line: 0, col: 0 },
+    },
+    {
       name: "2dw repeats delete-word",
       text: "one two three",
       keys: [ESC, "0", "2", "d", "w"],
@@ -762,6 +776,13 @@ test("VimPiEditor applies change operator motions", () => {
       text: "one two three",
       keys: [ESC, "0", "c", "w", "X"],
       textAfter: "Xtwo three",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "ct changes until before the target character and enters insert",
+      text: "abacad",
+      keys: [ESC, "0", "c", "t", "c", "X"],
+      textAfter: "Xcad",
       cursor: { line: 0, col: 1 },
     },
     {

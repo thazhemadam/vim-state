@@ -18,6 +18,10 @@ export function getVimMode(snapshot: VimSnapshot): VimMode {
     case "till-forward":
     case "till-backward":
     case "g-prefix":
+    case "operator-find-forward":
+    case "operator-find-backward":
+    case "operator-till-forward":
+    case "operator-till-backward":
     case "operator-pending":
     case "replace-once":
       return "normal";
@@ -32,7 +36,13 @@ export function getVimMode(snapshot: VimSnapshot): VimMode {
 
 /** Return the user-visible mode label, including parser substates worth showing. */
 export function getVimModeLabel(snapshot: VimSnapshot): VimModeLabel {
-  if (snapshot.value === "operator-pending") {
+  if (
+    snapshot.value === "operator-pending" ||
+    snapshot.value === "operator-find-forward" ||
+    snapshot.value === "operator-find-backward" ||
+    snapshot.value === "operator-till-forward" ||
+    snapshot.value === "operator-till-backward"
+  ) {
     return "-- OPERATOR --";
   }
 
