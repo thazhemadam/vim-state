@@ -122,6 +122,12 @@ export function resolveMotion(
 
     case "endOfWord": {
       const destination = endOfWordPosition(editor.getLines(), start);
+      // At the end of the final word, `e` has no motion. Operators like `de`
+      // should therefore leave the buffer untouched.
+      if (destination.line === start.line && destination.col === start.col) {
+        return undefined;
+      }
+
       return {
         range: {
           type: "charwise",

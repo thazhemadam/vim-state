@@ -342,6 +342,27 @@ test("VimPiEditor applies delete operator motions", () => {
       cursor: { line: 0, col: 3 },
     },
     {
+      name: "d$ deletes the final character",
+      text: "text1",
+      keys: [ESC, "$", "d", "$"],
+      textAfter: "text",
+      cursor: { line: 0, col: 3 },
+    },
+    {
+      name: "D deletes the final character",
+      text: "text1",
+      keys: [ESC, "$", "D"],
+      textAfter: "text",
+      cursor: { line: 0, col: 3 },
+    },
+    {
+      name: "de does nothing at the end of the final word",
+      text: "text1",
+      keys: [ESC, "$", "d", "e"],
+      textAfter: "text1",
+      cursor: { line: 0, col: 4 },
+    },
+    {
       name: "dd deletes current line",
       text: "one\ntwo",
       keys: [ESC, "k", "d", "d"],
@@ -531,6 +552,28 @@ test("VimPiEditor applies change operator motions", () => {
       cursor: { line: 0, col: 4 },
     },
     {
+      name: "c$ changes the final character from insert position",
+      text: "text1",
+      keys: [ESC, "$", "c", "$", "X"],
+      textAfter: "textX",
+      cursor: { line: 0, col: 5 },
+    },
+    {
+      name: "C changes the final character from insert position",
+      text: "text1",
+      keys: [ESC, "$", "C", "X"],
+      textAfter: "textX",
+      cursor: { line: 0, col: 5 },
+    },
+    {
+      name: "ce enters insert at the end of the final word without deleting",
+      text: "text1",
+      keys: [ESC, "$", "c", "e"],
+      textAfter: "text1",
+      cursor: { line: 0, col: 4 },
+      mode: "insert",
+    },
+    {
       name: "C deletes to line end and enters insert",
       text: "one two",
       keys: [ESC, "0", "l", "l", "l", "C", "X"],
@@ -542,7 +585,11 @@ test("VimPiEditor applies change operator motions", () => {
     play(editor, spec.keys);
     assertEditor(
       editor,
-      { text: spec.textAfter, cursor: spec.cursor, mode: "insert" },
+      {
+        text: spec.textAfter,
+        cursor: spec.cursor,
+        mode: spec.mode ?? "insert",
+      },
       spec.name,
     );
   }
