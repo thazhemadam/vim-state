@@ -13,6 +13,7 @@ import type {
   VimEditorHost,
   VimMotion,
   VimNoun,
+  VimRegister,
 } from "./types.js";
 import {
   currentLine,
@@ -27,6 +28,7 @@ export type {
   VimMotion,
   VimNoun,
   VimOperator,
+  VimRegister,
 } from "./types.js";
 
 export { nounForKey } from "./utils.js";
@@ -75,22 +77,23 @@ export function VimEditor<TBase extends Constructor<VimEditorHost>>(
       this.sendInputToEditor(LINE_END);
     }
 
-    /** Apply a supported operator noun as a delete. */
-    delete(noun: VimNoun): void {
+    /** Apply a supported operator noun as a delete and return the deleted text for registers. */
+    delete(noun: VimNoun): VimRegister | undefined {
       const result = resolveMotion(this, noun);
       if (!result) {
-        return;
+        return undefined;
       }
 
-      applyDeleteRange(this, result.range);
+      const register = applyDeleteRange(this, result.range);
 
       // `left` (X/dh) deletes by moving to the previous character and deleting
-      // forward, so it already lands on the right Normal-mode column.
-      if (noun === "left") {
-        return;
+      // forward, so it already lands on the right Normal-mode column,
+      // so we don't need to clamp the cursor to the column.
+      if (noun !== "left") {
+        this.clampCursorColumn();
       }
 
-      this.clampCursorColumn();
+      return register;
     }
 
     /** Replace the Normal-mode character under the cursor and keep the cursor on the replacement. */

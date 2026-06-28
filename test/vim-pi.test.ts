@@ -366,6 +366,84 @@ test("VimPiEditor applies delete operator motions", () => {
   }
 });
 
+test("VimPiEditor stores deleted text in the unnamed register", () => {
+  for (const spec of [
+    {
+      name: "x stores a charwise register",
+      text: "abc",
+      keys: [ESC, "0", "x"],
+      register: { text: "a", type: "charwise" },
+    },
+    {
+      name: "X stores the deleted character in buffer order",
+      text: "abc",
+      keys: [ESC, "0", "l", "X"],
+      register: { text: "a", type: "charwise" },
+    },
+    {
+      name: "dw stores a charwise register",
+      text: "one two",
+      keys: [ESC, "0", "d", "w"],
+      register: { text: "one ", type: "charwise" },
+    },
+    {
+      name: "dd stores a linewise register",
+      text: "one\ntwo",
+      keys: [ESC, "k", "d", "d"],
+      register: { text: "one\n", type: "linewise" },
+    },
+    {
+      name: "2dw stores the full repeated delete",
+      text: "one two three",
+      keys: [ESC, "0", "2", "d", "w"],
+      register: { text: "one two ", type: "charwise" },
+    },
+    {
+      name: "3dh stores backward deletes in buffer order",
+      text: "abcdef",
+      keys: [ESC, "0", "l", "l", "l", "3", "d", "h"],
+      register: { text: "abc", type: "charwise" },
+    },
+    {
+      name: "replace mode delete does not update the register",
+      text: "abc",
+      keys: [ESC, "0", "x", "R", "Z"],
+      register: { text: "a", type: "charwise" },
+    },
+  ] as const) {
+    const editor = createEditorWithText(spec.text);
+    play(editor, spec.keys);
+    assertRegister(editor, spec.register, spec.name);
+  }
+});
+
+test("VimPiEditor stores changed text in the unnamed register", () => {
+  for (const spec of [
+    {
+      name: "cw stores changed text",
+      text: "one two",
+      keys: [ESC, "0", "c", "w"],
+      register: { text: "one ", type: "charwise" },
+    },
+    {
+      name: "cc stores changed line",
+      text: "one\ntwo",
+      keys: [ESC, "k", "c", "c"],
+      register: { text: "one\n", type: "linewise" },
+    },
+    {
+      name: "C stores text changed to line end",
+      text: "one two",
+      keys: [ESC, "0", "l", "l", "l", "C"],
+      register: { text: " two", type: "charwise" },
+    },
+  ] as const) {
+    const editor = createEditorWithText(spec.text);
+    play(editor, spec.keys);
+    assertRegister(editor, spec.register, spec.name);
+  }
+});
+
 test("VimPiEditor applies change operator motions", () => {
   for (const spec of [
     {
@@ -699,6 +777,14 @@ function assertEditor(
   if (expected.mode) {
     assert.equal(getVimMode(editor.vimSnapshot), expected.mode, message);
   }
+}
+
+function assertRegister(
+  editor: VimPiEditor,
+  expected: { text: string; type: "charwise" | "linewise" },
+  message?: string,
+): void {
+  assert.deepEqual(editor.vimSnapshot.context.register, expected, message);
 }
 
 function play(editor: VimPiEditor, keys: readonly string[]): void {

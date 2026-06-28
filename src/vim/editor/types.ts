@@ -11,9 +11,16 @@ export type VimMotion =
   | "previousWord"
   | "endOfWord";
 
+/** Pending operator plus the count captured before the operator key. */
 export type VimOperator = {
   name: "delete" | "change";
   count?: number;
+};
+
+/** Unnamed-register payload captured by delete/change operations. */
+export type VimRegister = {
+  text: string;
+  type: "charwise" | "linewise";
 };
 
 /** Motion or text-object-like noun an operator can act on. */
@@ -41,8 +48,7 @@ export interface VimEditorApi {
   placeCaretAtLineStart(): void;
   placeCaretAfterCursor(): void;
   placeCaretAtLineEnd(): void;
-  /** Apply an operator noun as a delete operation. */
-  delete(noun: VimNoun): void;
+  delete(noun: VimNoun): VimRegister | undefined;
   replaceCharUnderCursor(char: string): void;
   clampCursorColumn(): void;
 }

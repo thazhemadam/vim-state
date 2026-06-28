@@ -5,6 +5,7 @@ import type {
   VimNoun,
   VimPosition,
   VimRange,
+  VimRegister,
 } from "./types.js";
 import {
   currentLine,
@@ -139,8 +140,12 @@ export function resolveMotion(
   }
 }
 
-/** Apply a delete range through host-editor cursor movement and forward-delete primitives. */
-export function applyDeleteRange(editor: VimEditorHost, range: VimRange): void {
+/** Apply a delete range and return the text it removed for the unnamed register. */
+export function applyDeleteRange(
+  editor: VimEditorHost,
+  range: VimRange,
+): VimRegister {
+  const register = registerForRange(editor.getLines(), range);
   switch (range.type) {
     case "charwise":
       moveCursorToPosition(editor, range.start);
@@ -148,7 +153,7 @@ export function applyDeleteRange(editor: VimEditorHost, range: VimRange): void {
         editor,
         deleteDistance(editor.getLines(), range.start, range.end),
       );
-      return;
+      return register;
     case "linewise":
       moveCursorToPosition(editor, { line: range.startLine, col: 0 });
       for (let line = range.startLine; line <= range.endLine; ++line) {
@@ -157,8 +162,16 @@ export function applyDeleteRange(editor: VimEditorHost, range: VimRange): void {
           editor.sendInputToEditor(DELETE_FORWARD);
         }
       }
-      return;
+      return register;
   }
+}
+
+/** Build the register metadata for a range without mutating editor state. */
+function registerForRange(lines: string[], range: VimRange): VimRegister {
+  return {
+    text: textForRange(lines, range),
+    type: range.type === "linewise" ? "linewise" : "charwise",
+  };
 }
 
 /** Clamp a requested destination to a valid Normal-mode cursor column. */
@@ -185,6 +198,34 @@ function normalizedCharRange(start: VimPosition, end: VimPosition): VimRange {
   }
 
   return { type: "charwise", start: end, end: start };
+}
+
+/** Return the exact buffer text covered by a resolved operator range. */
+function textForRange(lines: string[], range: VimRange): string {
+  switch (range.type) {
+    case "charwise":
+      return charwiseText(lines, range.start, range.end);
+    case "linewise":
+      return `${lines.slice(range.startLine, range.endLine + 1).join("\n")}\n`;
+  }
+}
+
+/** Return charwise text between two positions, preserving embedded newlines. */
+function charwiseText(
+  lines: string[],
+  start: VimPosition,
+  end: VimPosition,
+): string {
+  if (start.line === end.line) {
+    return (lines[start.line] ?? "").slice(start.col, end.col);
+  }
+
+  const chunks = [(lines[start.line] ?? "").slice(start.col)];
+  for (let line = start.line + 1; line < end.line; ++line) {
+    chunks.push(lines[line] ?? "");
+  }
+  chunks.push((lines[end.line] ?? "").slice(0, end.col));
+  return chunks.join("\n");
 }
 
 /** Delete `count` characters using the host editor's forward-delete primitive. */

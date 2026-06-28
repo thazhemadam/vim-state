@@ -1,7 +1,7 @@
 import { assign, setup, type SnapshotFrom } from "xstate";
 
 import { type VimContext, type VimInput } from "./context.js";
-import type { VimMotion, VimNoun, VimOperator } from "./editor.js";
+import type { VimMotion, VimNoun, VimOperator, VimRegister } from "./editor.js";
 import { nounForKey } from "./editor.js";
 import type { VimEvent } from "./events.js";
 import { initialVimMode } from "./state.js";
@@ -42,25 +42,33 @@ export const vimMachine = setup({
     insertLineAbove: ({ context }) => context.editor.insertLineAbove(),
     placeCaretAtLineStart: ({ context }) =>
       context.editor.placeCaretAtLineStart(),
-    applyPendingOperatorToEventNoun: ({ context, event }) => {
-      const noun = nounForKey(event.key, context.operator);
-      if (!noun || !context.operator) {
-        return;
-      }
+    applyPendingOperatorToEventNoun: assign({
+      register: ({ context, event }) => {
+        const noun = nounForKey(event.key, context.operator);
+        if (!noun || !context.operator) {
+          return context.register;
+        }
 
-      const count = (context.operator.count ?? 1) * (context.count ?? 1);
-      for (let i = 0; i < count; ++i) {
-        context.editor.delete(noun);
-      }
+        const register = deleteForRegister(
+          context,
+          noun,
+          (context.operator.count ?? 1) * (context.count ?? 1),
+        );
 
-      // Change enters Insert mode; after c$/C, place the caret after the
-      // remaining last character instead of before it.
-      if (context.operator.name === "change" && noun === "lineEnd") {
-        context.editor.placeCaretAfterCursor();
-      }
-    },
-    delete: ({ context }, params: { noun: VimNoun }) =>
-      repeat(context, () => context.editor.delete(params.noun)),
+        // Change enters Insert mode; after c$/C, place the caret after the
+        // remaining last character instead of before it.
+        if (context.operator.name === "change" && noun === "lineEnd") {
+          context.editor.placeCaretAfterCursor();
+        }
+
+        return register ?? context.register;
+      },
+    }),
+    delete: assign({
+      register: ({ context }, params: { noun: VimNoun }) =>
+        deleteForRegister(context, params.noun, context.count ?? 1) ??
+        context.register,
+    }),
     replaceCharUnderCursor: ({ context }, params: { char: string }) =>
       context.editor.replaceCharUnderCursor(params.char),
   },
@@ -85,6 +93,7 @@ export const vimMachine = setup({
     editor: input.editor,
     count: undefined,
     operator: undefined,
+    register: undefined,
   }),
   initial: initialVimMode,
   states: {
@@ -107,7 +116,7 @@ export const vimMachine = setup({
           },
           {
             guard: { type: "keyIsPrintable" },
-            actions: { type: "delete", params: { noun: "right" } },
+            actions: ({ context }) => context.editor.delete("right"),
           },
         ],
       },
@@ -280,10 +289,50 @@ export const vimMachine = setup({
   },
 });
 
+/** Run an action according to the current Normal-mode count. */
 function repeat(context: VimContext, action: () => void): void {
   for (let i = 0; i < (context.count ?? 1); ++i) {
     action();
   }
+}
+
+/** Apply a repeated delete and combine the removed text into one register payload. */
+function deleteForRegister(
+  context: VimContext,
+  noun: VimNoun,
+  count: number,
+): VimRegister | undefined {
+  let register: VimRegister | undefined;
+  for (let i = 0; i < count; ++i) {
+    const deleted = context.editor.delete(noun);
+    if (!deleted) {
+      continue;
+    }
+    register = appendRegister(register, deleted, noun);
+  }
+  return register;
+}
+
+/** Append repeated delete payloads in buffer order, including backward motions. */
+function appendRegister(
+  register: VimRegister | undefined,
+  deleted: VimRegister,
+  noun: VimNoun,
+): VimRegister {
+  if (!register) {
+    return deleted;
+  }
+  return {
+    type: deleted.type,
+    text: deletesBackward(noun)
+      ? deleted.text + register.text
+      : register.text + deleted.text,
+  };
+}
+
+/** Return true when repeated deletes walk backward through the buffer. */
+function deletesBackward(noun: VimNoun): boolean {
+  return noun === "left" || noun === "previousWord" || noun === "up";
 }
 
 export type VimSnapshot = SnapshotFrom<typeof vimMachine>;
