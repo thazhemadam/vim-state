@@ -196,6 +196,39 @@ export function previousBigWordPosition(
   return { line: 0, col: 0 };
 }
 
+/** Return the next whitespace-delimited WORD end for Normal-mode `E`. */
+export function endOfBigWordPosition(
+  lines: string[],
+  cursor: { line: number; col: number },
+): { line: number; col: number } {
+  for (let lineIndex = cursor.line; lineIndex < lines.length; lineIndex += 1) {
+    const line = lines[lineIndex] ?? "";
+    let col = lineIndex === cursor.line ? cursor.col : 0;
+
+    while (col < line.length) {
+      while (col < line.length && isWhitespace(line[col]!)) {
+        col += 1;
+      }
+      if (col >= line.length) {
+        break;
+      }
+
+      let end = col;
+      while (end + 1 < line.length && !isWhitespace(line[end + 1]!)) {
+        end += 1;
+      }
+
+      if (lineIndex !== cursor.line || end !== cursor.col) {
+        return { line: lineIndex, col: end };
+      }
+      col = end + 1;
+    }
+  }
+
+  const lastLine = Math.max(lines.length - 1, 0);
+  return { line: lastLine, col: normalMaxColumn(lines[lastLine] ?? "") };
+}
+
 /**
  * Resolve a Vim key into the noun/motion it names.
  *

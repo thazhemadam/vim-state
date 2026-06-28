@@ -207,6 +207,12 @@ test("VimPiEditor applies Normal-mode word motions", () => {
       keys: [ESC, "0", "W", "B"],
       cursor: { line: 0, col: 0 },
     },
+    {
+      name: "E treats punctuation as part of a WORD",
+      text: "foo-bar baz",
+      keys: [ESC, "0", "E"],
+      cursor: { line: 0, col: 6 },
+    },
   ] as const) {
     const editor = createEditorWithText(spec.text);
     play(editor, spec.keys);
@@ -553,6 +559,14 @@ test("VimPiEditor stores yanked text in the unnamed register", () => {
       textAfter: "one two three",
       cursor: { line: 0, col: 0 },
       register: { text: "one two ", type: "charwise" },
+    },
+    {
+      name: "yE stores through the end of a WORD",
+      text: "foo-bar baz",
+      keys: [ESC, "0", "y", "E"],
+      textAfter: "foo-bar baz",
+      cursor: { line: 0, col: 0 },
+      register: { text: "foo-bar", type: "charwise" },
     },
   ] as const) {
     const editor = createEditorWithText(spec.text);

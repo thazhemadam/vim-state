@@ -285,10 +285,11 @@ class VimEditorCore implements VimEditorApi {
         };
       }
 
-      case "endOfWord": {
+      case "endOfWord":
+      case "endOfBigWord": {
         const destination = countedWordPosition(this.lines, start, noun, steps);
-        // At the end of the final word, `e` has no motion. Operators like `de`
-        // should therefore leave the buffer untouched.
+        // At the end of the final word, `e`/`E` has no motion. Operators like
+        // `de` should therefore leave the buffer untouched.
         if (samePosition(start, destination)) {
           return undefined;
         }

@@ -1,5 +1,6 @@
 import type { VimPosition, VimRange, VimRegister } from "./types.js";
 import {
+  endOfBigWordPosition,
   endOfWordPosition,
   nextBigWordPosition,
   nextWordPosition,
@@ -83,6 +84,8 @@ type WordMotion =
   | "endOfWord"
   | "nextBigWord"
   | "previousBigWord"
+  | "endOfBigWord";
+
 /** Resolve one supported word-ish motion. */
 function wordPosition(
   lines: string[],
@@ -100,6 +103,8 @@ function wordPosition(
       return nextBigWordPosition(lines, position);
     case "previousBigWord":
       return previousBigWordPosition(lines, position);
+    case "endOfBigWord":
+      return endOfBigWordPosition(lines, position);
   }
 }
 
