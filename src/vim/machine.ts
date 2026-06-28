@@ -59,9 +59,9 @@ export const vimMachine = setup({
     keyIs: ({ event }, params: { key: string }) => event.key === params.key,
     keyIsPrintable: ({ event }) =>
       Array.from(event.key).length === 1 && event.key >= " ",
-    keyIsCountDigit: ({ event }) => /^[1-9]$/.test(event.key),
-    keyIsZeroWithCount: ({ context, event }) =>
-      event.key === "0" && context.count !== undefined,
+    keyExtendsCount: ({ context, event }) =>
+      /^[1-9]$/.test(event.key) ||
+      (event.key === "0" && context.count !== undefined),
     keyIsMotionNoun: ({ event }) => nounForKey(event.key) !== undefined,
     keyIsOperatorNoun: ({ context, event }) =>
       nounForKey(event.key, context.operator) !== undefined,
@@ -127,11 +127,7 @@ export const vimMachine = setup({
             actions: [{ type: "clearOperator" }, { type: "clearCount" }],
           },
           {
-            guard: { type: "keyIsCountDigit" },
-            actions: { type: "appendCount" },
-          },
-          {
-            guard: { type: "keyIsZeroWithCount" },
+            guard: { type: "keyExtendsCount" },
             actions: { type: "appendCount" },
           },
           {
@@ -154,11 +150,7 @@ export const vimMachine = setup({
       on: {
         KEY: [
           {
-            guard: { type: "keyIsCountDigit" },
-            actions: { type: "appendCount" },
-          },
-          {
-            guard: { type: "keyIsZeroWithCount" },
+            guard: { type: "keyExtendsCount" },
             actions: { type: "appendCount" },
           },
           {
