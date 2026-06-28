@@ -1,5 +1,12 @@
-import { ARROW_DOWN, ARROW_RIGHT, ARROW_UP, LINE_START } from "./constants.js";
-import type { VimEditorHost } from "./types.js";
+import {
+  ARROW_DOWN,
+  ARROW_RIGHT,
+  ARROW_UP,
+  LINE_START,
+  NOUN_BY_KEY,
+  OPERATOR_KEY,
+} from "./constants.js";
+import type { VimEditorHost, VimNoun, VimOperator } from "./types.js";
 
 export function cursor(editor: VimEditorHost): { line: number; col: number } {
   return editor.getCursor();
@@ -161,6 +168,24 @@ export function endOfWordPosition(
 
   const lastLine = Math.max(lines.length - 1, 0);
   return { line: lastLine, col: normalMaxColumn(lines[lastLine] ?? "") };
+}
+
+/**
+ * Resolve a Vim key into the noun/motion it names.
+ *
+ * With a pending operator, repeating the operator key means the current line
+ * (`dd`, later `cc`, `yy`). Otherwise keys are resolved through the shared
+ * normal-motion noun table.
+ */
+export function nounForKey(
+  key: string,
+  pendingOperator?: VimOperator,
+): VimNoun | undefined {
+  if (pendingOperator && key === OPERATOR_KEY[pendingOperator]) {
+    return "line";
+  }
+
+  return NOUN_BY_KEY[key];
 }
 
 /** Classify characters for the initial word-motion subset. */

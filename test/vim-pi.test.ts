@@ -265,6 +265,34 @@ test("VimPiEditor applies Normal-mode count edge cases", () => {
 test("VimPiEditor applies delete operator motions", () => {
   for (const spec of [
     {
+      name: "dl deletes under cursor",
+      text: "abc",
+      keys: [ESC, "0", "d", "l"],
+      textAfter: "bc",
+      cursor: { line: 0, col: 0 },
+    },
+    {
+      name: "dh deletes before cursor",
+      text: "abc",
+      keys: [ESC, "0", "l", "l", "d", "h"],
+      textAfter: "ac",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "dj deletes current and next line",
+      text: "one\ntwo\nthree",
+      keys: [ESC, "k", "k", "d", "j"],
+      textAfter: "three",
+      cursor: { line: 0, col: 0 },
+    },
+    {
+      name: "dk deletes previous and current line",
+      text: "one\ntwo\nthree",
+      keys: [ESC, "k", "d", "k"],
+      textAfter: "three",
+      cursor: { line: 0, col: 0 },
+    },
+    {
       name: "dw deletes to next word",
       text: "one two three",
       keys: [ESC, "0", "d", "w"],

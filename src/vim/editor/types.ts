@@ -11,6 +11,8 @@ export type VimMotion =
   | "previousWord"
   | "endOfWord";
 
+export type VimOperator = "delete";
+
 /** Motion or text-object-like noun an operator can act on. */
 export type VimNoun = VimMotion | "line";
 

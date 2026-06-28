@@ -1,7 +1,8 @@
 import { assign, setup, type SnapshotFrom } from "xstate";
 
-import { type VimContext, type VimInput, type VimOperator } from "./context.js";
+import { type VimContext, type VimInput } from "./context.js";
 import type { VimMotion, VimNoun } from "./editor.js";
+import { nounForKey } from "./editor.js";
 import type { VimEvent } from "./events.js";
 import { initialVimMode } from "./state.js";
 
@@ -24,15 +25,26 @@ export const vimMachine = setup({
     placeCaretAtLineEnd: ({ context }) => context.editor.placeCaretAtLineEnd(),
     move: ({ context }, params: { motion: VimMotion }) =>
       repeat(context, () => context.editor.move(params.motion)),
+    moveByEventNoun: ({ context, event }) => {
+      const noun = nounForKey(event.key);
+      if (!noun || noun === "line") {
+        return;
+      }
+      repeat(context, () => context.editor.move(noun));
+    },
     insertLineBelow: ({ context }) => context.editor.insertLineBelow(),
     insertLineAbove: ({ context }) => context.editor.insertLineAbove(),
     placeCaretAtLineStart: ({ context }) =>
       context.editor.placeCaretAtLineStart(),
+    applyPendingOperatorToEventNoun: ({ context, event }) => {
+      const noun = nounForKey(event.key, context.pendingOperator);
+      if (!noun || context.pendingOperator !== "delete") return;
+      repeat(context, () => context.editor.delete(noun));
+    },
     delete: ({ context }, params: { noun: VimNoun }) =>
       repeat(context, () => context.editor.delete(params.noun)),
     replaceCharUnderCursor: ({ context }, params: { char: string }) =>
       context.editor.replaceCharUnderCursor(params.char),
-    clampCursorColumn: ({ context }) => context.editor.clampCursorColumn(),
   },
   guards: {
     keyIs: ({ event }, params: { key: string }) => event.key === params.key,
@@ -41,11 +53,9 @@ export const vimMachine = setup({
     keyIsCountDigit: ({ event }) => /^[1-9]$/.test(event.key),
     keyIsZeroWithCount: ({ context, event }) =>
       event.key === "0" && context.count !== undefined,
-    pendingOperatorKeyIs: (
-      { context, event },
-      params: { operator: VimOperator; key: string },
-    ) =>
-      context.pendingOperator === params.operator && event.key === params.key,
+    keyIsMotionNoun: ({ event }) => nounForKey(event.key) !== undefined,
+    keyIsOperatorNoun: ({ context, event }) =>
+      nounForKey(event.key, context.pendingOperator) !== undefined,
   },
 }).createMachine({
   id: "vim-pi",
@@ -108,37 +118,10 @@ export const vimMachine = setup({
             actions: [{ type: "clearOperator" }, { type: "clearCount" }],
           },
           {
-            guard: {
-              type: "pendingOperatorKeyIs",
-              params: { operator: "delete", key: "w" },
-            },
+            guard: { type: "keyIsOperatorNoun" },
             target: "normal",
             actions: [
-              { type: "delete", params: { noun: "nextWord" } },
-              { type: "clearOperator" },
-              { type: "clearCount" },
-            ],
-          },
-          {
-            guard: {
-              type: "pendingOperatorKeyIs",
-              params: { operator: "delete", key: "$" },
-            },
-            target: "normal",
-            actions: [
-              { type: "delete", params: { noun: "lineEnd" } },
-              { type: "clearOperator" },
-              { type: "clearCount" },
-            ],
-          },
-          {
-            guard: {
-              type: "pendingOperatorKeyIs",
-              params: { operator: "delete", key: "d" },
-            },
-            target: "normal",
-            actions: [
-              { type: "delete", params: { noun: "line" } },
+              { type: "applyPendingOperatorToEventNoun" },
               { type: "clearOperator" },
               { type: "clearCount" },
             ],
@@ -221,87 +204,13 @@ export const vimMachine = setup({
             ],
           },
           {
-            guard: { type: "keyIs", params: { key: "h" } },
-            actions: [
-              { type: "move", params: { motion: "left" } },
-              { type: "clearCount" },
-            ],
-          },
-          {
-            guard: { type: "keyIs", params: { key: "j" } },
-            actions: [
-              { type: "move", params: { motion: "down" } },
-              { type: "clearCount" },
-            ],
-          },
-          {
-            guard: { type: "keyIs", params: { key: "k" } },
-            actions: [
-              { type: "move", params: { motion: "up" } },
-              { type: "clearCount" },
-            ],
-          },
-          {
-            guard: { type: "keyIs", params: { key: "l" } },
-            actions: [
-              { type: "move", params: { motion: "right" } },
-              { type: "clearCount" },
-            ],
-          },
-          {
-            guard: { type: "keyIs", params: { key: "0" } },
-            actions: [
-              { type: "move", params: { motion: "lineStart" } },
-              { type: "clearCount" },
-            ],
-          },
-          {
-            guard: { type: "keyIs", params: { key: "$" } },
-            actions: [
-              { type: "move", params: { motion: "lineEnd" } },
-              { type: "clearCount" },
-            ],
-          },
-          {
-            guard: { type: "keyIs", params: { key: "^" } },
-            actions: [
-              { type: "move", params: { motion: "firstNonBlank" } },
-              { type: "clearCount" },
-            ],
-          },
-          {
-            guard: { type: "keyIs", params: { key: "_" } },
-            actions: [
-              { type: "move", params: { motion: "firstNonBlank" } },
-              { type: "clearCount" },
-            ],
-          },
-          {
-            guard: { type: "keyIs", params: { key: "w" } },
-            actions: [
-              { type: "move", params: { motion: "nextWord" } },
-              { type: "clearCount" },
-            ],
-          },
-          {
-            guard: { type: "keyIs", params: { key: "b" } },
-            actions: [
-              { type: "move", params: { motion: "previousWord" } },
-              { type: "clearCount" },
-            ],
-          },
-          {
-            guard: { type: "keyIs", params: { key: "e" } },
-            actions: [
-              { type: "move", params: { motion: "endOfWord" } },
-              { type: "clearCount" },
-            ],
+            guard: { type: "keyIsMotionNoun" },
+            actions: [{ type: "moveByEventNoun" }, { type: "clearCount" }],
           },
           {
             guard: { type: "keyIs", params: { key: "x" } },
             actions: [
               { type: "delete", params: { noun: "right" } },
-              { type: "clampCursorColumn" },
               { type: "clearCount" },
             ],
           },

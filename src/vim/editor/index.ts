@@ -26,7 +26,10 @@ export type {
   VimEditorHost,
   VimMotion,
   VimNoun,
+  VimOperator,
 } from "./types.js";
+
+export { nounForKey } from "./utils.js";
 
 export function VimEditor<TBase extends Constructor<VimEditorHost>>(
   Base: TBase,
