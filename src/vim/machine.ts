@@ -195,6 +195,13 @@ export const vimMachine = setup({
             actions: { type: "setDeleteOperator" },
           },
           {
+            guard: { type: "keyIs", params: { key: "D" } },
+            actions: [
+              { type: "delete", params: { noun: "lineEnd" } },
+              { type: "clearCount" },
+            ],
+          },
+          {
             guard: { type: "keyIs", params: { key: "o" } },
             target: "insert",
             actions: [

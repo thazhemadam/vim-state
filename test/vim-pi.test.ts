@@ -335,6 +335,13 @@ test("VimPiEditor applies delete operator motions", () => {
       cursor: { line: 0, col: 3 },
     },
     {
+      name: "D deletes to line end",
+      text: "one two",
+      keys: [ESC, "0", "l", "l", "l", "l", "D"],
+      textAfter: "one ",
+      cursor: { line: 0, col: 3 },
+    },
+    {
       name: "dd deletes current line",
       text: "one\ntwo",
       keys: [ESC, "k", "d", "d"],
