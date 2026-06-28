@@ -179,9 +179,9 @@ export function endOfWordPosition(
  */
 export function nounForKey(
   key: string,
-  pendingOperator?: VimOperator,
+  operator?: VimOperator,
 ): VimNoun | undefined {
-  if (pendingOperator && key === OPERATOR_KEY[pendingOperator]) {
+  if (operator && key === OPERATOR_KEY[operator.name]) {
     return "line";
   }
 

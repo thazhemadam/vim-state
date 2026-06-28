@@ -4,7 +4,7 @@ import type { VimEditorApi, VimOperator } from "./editor.js";
 export interface VimContext {
   editor: VimEditorApi;
   count?: number;
-  pendingOperator?: VimOperator;
+  operator?: VimOperator;
 }
 
 export type VimInput = VimContext;

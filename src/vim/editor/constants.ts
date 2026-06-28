@@ -1,4 +1,4 @@
-import { VimMotion, VimOperator } from "./types.js";
+import type { VimMotion, VimOperator } from "./types.js";
 
 /** Terminal/control key bytes forwarded to the host editor. */
 export const ARROW_LEFT = "\x1b[D";
@@ -11,7 +11,7 @@ export const NEWLINE = "\n";
 export const DELETE_FORWARD = "\x1b[3~"; // Delete
 export const DELETE_BACKWARD = "\x7f"; // Backspace
 
-export const OPERATOR_KEY: Record<VimOperator, string> = {
+export const OPERATOR_KEY: Record<VimOperator["name"], string> = {
   delete: "d",
 };
 

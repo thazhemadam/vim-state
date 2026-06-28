@@ -279,6 +279,27 @@ test("VimPiEditor applies delete operator motions", () => {
       cursor: { line: 0, col: 1 },
     },
     {
+      name: "3dh deletes three chars left",
+      text: "abcdef",
+      keys: [ESC, "0", "l", "l", "l", "3", "d", "h"],
+      textAfter: "def",
+      cursor: { line: 0, col: 0 },
+    },
+    {
+      name: "d3h deletes three chars left",
+      text: "abcdef",
+      keys: [ESC, "0", "l", "l", "l", "d", "3", "h"],
+      textAfter: "def",
+      cursor: { line: 0, col: 0 },
+    },
+    {
+      name: "2d3h deletes six chars left",
+      text: "abcdefghi",
+      keys: [ESC, "0", "l", "l", "l", "l", "l", "l", "2", "d", "3", "h"],
+      textAfter: "ghi",
+      cursor: { line: 0, col: 0 },
+    },
+    {
       name: "dj deletes current and next line",
       text: "one\ntwo\nthree",
       keys: [ESC, "k", "k", "d", "j"],

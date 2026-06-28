@@ -18,8 +18,11 @@ export const vimMachine = setup({
         (context.count ?? 0) * 10 + Number(event.key),
     }),
     clearCount: assign({ count: undefined }),
-    setDeleteOperator: assign({ pendingOperator: "delete" }),
-    clearOperator: assign({ pendingOperator: undefined }),
+    setDeleteOperator: assign({
+      operator: ({ context }) => ({ name: "delete", count: context.count }),
+      count: undefined,
+    }),
+    clearOperator: assign({ operator: undefined }),
     placeCaretAfterCursor: ({ context }) =>
       context.editor.placeCaretAfterCursor(),
     placeCaretAtLineEnd: ({ context }) => context.editor.placeCaretAtLineEnd(),
@@ -37,9 +40,15 @@ export const vimMachine = setup({
     placeCaretAtLineStart: ({ context }) =>
       context.editor.placeCaretAtLineStart(),
     applyPendingOperatorToEventNoun: ({ context, event }) => {
-      const noun = nounForKey(event.key, context.pendingOperator);
-      if (!noun || context.pendingOperator !== "delete") return;
-      repeat(context, () => context.editor.delete(noun));
+      const noun = nounForKey(event.key, context.operator);
+      if (!noun || context.operator?.name !== "delete") {
+        return;
+      }
+
+      const count = (context.operator.count ?? 1) * (context.count ?? 1);
+      for (let i = 0; i < count; ++i) {
+        context.editor.delete(noun);
+      }
     },
     delete: ({ context }, params: { noun: VimNoun }) =>
       repeat(context, () => context.editor.delete(params.noun)),
@@ -55,14 +64,14 @@ export const vimMachine = setup({
       event.key === "0" && context.count !== undefined,
     keyIsMotionNoun: ({ event }) => nounForKey(event.key) !== undefined,
     keyIsOperatorNoun: ({ context, event }) =>
-      nounForKey(event.key, context.pendingOperator) !== undefined,
+      nounForKey(event.key, context.operator) !== undefined,
   },
 }).createMachine({
   id: "vim-pi",
   context: ({ input }) => ({
     editor: input.editor,
     count: undefined,
-    pendingOperator: undefined,
+    operator: undefined,
   }),
   initial: initialVimMode,
   states: {
@@ -116,6 +125,14 @@ export const vimMachine = setup({
             guard: { type: "keyIs", params: { key: "escape" } },
             target: "normal",
             actions: [{ type: "clearOperator" }, { type: "clearCount" }],
+          },
+          {
+            guard: { type: "keyIsCountDigit" },
+            actions: { type: "appendCount" },
+          },
+          {
+            guard: { type: "keyIsZeroWithCount" },
+            actions: { type: "appendCount" },
           },
           {
             guard: { type: "keyIsOperatorNoun" },
