@@ -309,7 +309,6 @@ export const vimMachine = setup({
             guard: { type: "keyIs", params: { key: "X" } },
             actions: [
               { type: "delete", params: { target: "charBeforeCursor" } },
-              { type: "moveCursorLeft" },
               { type: "clearCount" },
             ],
           },

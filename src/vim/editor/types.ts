@@ -5,6 +5,14 @@ export type VimDeleteTarget =
   | "lineEnd"
   | "line";
 
+/** Zero-based editor position. `col` is a UTF-16/string column for now. */
+export type VimPosition = { line: number; col: number };
+
+/** Minimal internal range model used to apply delete operations. */
+export type VimRange =
+  | { type: "charwise"; start: VimPosition; end: VimPosition }
+  | { type: "linewise"; startLine: number; endLine: number };
+
 export interface VimEditorApi {
   moveCursorLeft(): void;
   moveCursorDown(): void;
@@ -29,7 +37,7 @@ export interface VimEditorApi {
 export type Constructor<T = {}> = new (...args: any[]) => T;
 
 export interface VimEditorHost {
-  getCursor(): { line: number; col: number };
+  getCursor(): VimPosition;
   getLines(): string[];
   sendInputToEditor(data: string): void;
 }

@@ -3,12 +3,11 @@ import {
   ARROW_LEFT,
   ARROW_RIGHT,
   ARROW_UP,
-  DELETE_BACKWARD,
-  DELETE_FORWARD,
   LINE_END,
   LINE_START,
   NEWLINE,
 } from "./constants.js";
+import { applyDeleteRange, deleteRange } from "./operators.js";
 import type {
   Constructor,
   VimDeleteTarget,
@@ -18,8 +17,6 @@ import type {
 import {
   currentLine,
   cursor,
-  deleteDistance,
-  deleteForward,
   endOfWordPosition,
   firstNonBlankColumn,
   moveCaretToColumn,
@@ -146,47 +143,16 @@ export function VimEditor<TBase extends Constructor<VimEditorHost>>(
 
     /** Apply a supported Normal-mode delete target. */
     delete(target: VimDeleteTarget): void {
-      switch (target) {
-        case "charUnderCursor":
-          if (cursor(this).col < currentLine(this).length) {
-            this.sendInputToEditor(DELETE_FORWARD);
-          }
-          return;
-        case "charBeforeCursor": {
-          const { col } = cursor(this);
-          if (col === 0) return;
+      const range = deleteRange(this, target);
+      if (!range) return;
 
-          this.sendInputToEditor(DELETE_BACKWARD);
+      applyDeleteRange(this, range);
 
-          const targetCol = Math.min(col, currentLine(this).length);
-          while (cursor(this).col < targetCol)
-            this.sendInputToEditor(ARROW_RIGHT);
-          return;
-        }
-        case "nextWord": {
-          const target = nextWordPosition(this.getLines(), cursor(this));
-          deleteForward(
-            this,
-            deleteDistance(this.getLines(), cursor(this), target),
-          );
-          this.clampCursorColumn();
-          return;
-        }
-        case "lineEnd":
-          deleteForward(this, currentLine(this).length - cursor(this).col);
-          this.clampCursorColumn();
-          return;
-        case "line": {
-          const line = cursor(this).line;
-          const lineLength = currentLine(this).length;
-          this.moveCursorToLineStart();
-          deleteForward(this, lineLength);
-          if (line < this.getLines().length - 1)
-            this.sendInputToEditor(DELETE_FORWARD);
-          this.clampCursorColumn();
-          return;
-        }
-      }
+      // `charBeforeCursor` (X) deletes by moving to the previous character and
+      // deleting forward, so it already lands on the right Normal-mode column.
+      if (target === "charBeforeCursor") return;
+
+      this.clampCursorColumn();
     }
 
     /** Replace the Normal-mode character under the cursor and keep the cursor on the replacement. */
