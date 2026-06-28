@@ -90,6 +90,7 @@ test("Vim core calls Normal-mode cursor editor methods", () => {
     ["^", "moveCursorToFirstNonBlank"],
     ["_", "moveCursorToFirstNonBlank"],
     ["w", "moveCursorToNextWord"],
+    ["b", "moveCursorToPreviousWord"],
   ] as const) {
     calls.length = 0;
     actor.send({ type: "KEY", key });
@@ -248,6 +249,23 @@ test("VimPiEditor applies Normal-mode w word motion", () => {
   assert.deepEqual(editor.getCursor(), { line: 0, col: 9 });
   editor.handleInput("w");
   assert.deepEqual(editor.getCursor(), { line: 1, col: 2 });
+});
+
+test("VimPiEditor applies Normal-mode b word motion", () => {
+  const editor = createEditor();
+  editor.setText("foo  bar.baz\n  qux");
+  editor.handleInput("\x1b");
+
+  editor.handleInput("b");
+  assert.deepEqual(editor.getCursor(), { line: 1, col: 2 });
+  editor.handleInput("b");
+  assert.deepEqual(editor.getCursor(), { line: 0, col: 9 });
+  editor.handleInput("b");
+  assert.deepEqual(editor.getCursor(), { line: 0, col: 8 });
+  editor.handleInput("b");
+  assert.deepEqual(editor.getCursor(), { line: 0, col: 5 });
+  editor.handleInput("b");
+  assert.deepEqual(editor.getCursor(), { line: 0, col: 0 });
 });
 
 test("VimPiEditor passes configured app shortcuts through in Normal mode", () => {
