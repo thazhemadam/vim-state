@@ -655,6 +655,12 @@ test("VimPiEditor passes configured app shortcuts through in Normal mode", () =>
   });
 });
 
+test("VimPiEditor renders operator-pending mode label", () => {
+  const editor = createEditor();
+  play(editor, ["a", "b", "c", ESC, "d"]);
+  assert.match(editor.render(40).at(-1) ?? "", /-- OPERATOR --$/);
+});
+
 test("VimPiEditor uses hardware bar cursor in insert and fake block cursor in normal", () => {
   const writes: string[] = [];
   const editor = createEditor(writes);

@@ -1,7 +1,12 @@
 import type { VimMode } from "./state.js";
 import type { VimSnapshot } from "./machine.js";
 
-export type VimModeLabel = "-- INSERT --" | "-- NORMAL --" | "-- REPLACE --";
+/** Rendered status labels shown by the Pi adapter. */
+export type VimModeLabel =
+  | "-- INSERT --"
+  | "-- NORMAL --"
+  | "-- OPERATOR --"
+  | "-- REPLACE --";
 
 export function getVimMode(snapshot: VimSnapshot): VimMode {
   switch (snapshot.value) {
@@ -20,7 +25,12 @@ export function getVimMode(snapshot: VimSnapshot): VimMode {
   }
 }
 
+/** Return the user-visible mode label, including parser substates worth showing. */
 export function getVimModeLabel(snapshot: VimSnapshot): VimModeLabel {
+  if (snapshot.value === "operator-pending") {
+    return "-- OPERATOR --";
+  }
+
   switch (getVimMode(snapshot)) {
     case "insert":
       return "-- INSERT --";
