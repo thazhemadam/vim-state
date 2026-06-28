@@ -34,15 +34,19 @@ export function getVimMode(snapshot: VimSnapshot): VimMode {
   }
 }
 
-/** Return the user-visible mode label, including parser substates worth showing. */
-export function getVimModeLabel(snapshot: VimSnapshot): VimModeLabel {
-  if (
+export function isVimOperatorMode(snapshot: VimSnapshot): boolean {
+  return (
     snapshot.value === "operator-pending" ||
     snapshot.value === "operator-find-forward" ||
     snapshot.value === "operator-find-backward" ||
     snapshot.value === "operator-till-forward" ||
     snapshot.value === "operator-till-backward"
-  ) {
+  );
+}
+
+/** Return the user-visible mode label, including parser substates worth showing. */
+export function getVimModeLabel(snapshot: VimSnapshot): VimModeLabel {
+  if (isVimOperatorMode(snapshot)) {
     return "-- OPERATOR --";
   }
 

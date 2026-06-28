@@ -1183,6 +1183,10 @@ test("VimPiEditor uses hardware cursors for insert and operator-pending", () => 
   editor.handleInput("d");
   assert.deepEqual(writes, ["\x1b[6 q", "\x1b[2 q", "\x1b[4 q"]);
   assert.doesNotMatch(editor.render(40).join("\n"), /\x1b\[7m/);
+
+  editor.handleInput("f");
+  assert.deepEqual(writes, ["\x1b[6 q", "\x1b[2 q", "\x1b[4 q"]);
+  assert.match(editor.render(40).at(-1) ?? "", /-- OPERATOR --$/);
 });
 
 function assertEditor(

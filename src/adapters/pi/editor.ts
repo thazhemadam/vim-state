@@ -13,7 +13,11 @@ import {
 
 import { VimEditor, type VimEditorHost } from "../../vim/editor.js";
 import { vimMachine, type VimSnapshot } from "../../vim/machine.js";
-import { getVimMode, getVimModeLabel } from "../../vim/selectors.js";
+import {
+  getVimMode,
+  getVimModeLabel,
+  isVimOperatorMode,
+} from "../../vim/selectors.js";
 import { isPrintablePiInput, piInputToVimEvent } from "./keymap.js";
 
 class PiEditorHost extends CustomEditor implements VimEditorHost {
@@ -128,7 +132,7 @@ const CURSOR_SHAPE: Record<VimCursorStyle, string> = {
 
 /** Return the hardware cursor shape for the current Vim machine snapshot. */
 function vimCursorStyle(snapshot: VimSnapshot): VimCursorStyle {
-  if (snapshot.value === "operator-pending") {
+  if (isVimOperatorMode(snapshot)) {
     return "underline";
   }
   return getVimMode(snapshot) === "insert" ? "bar" : "block";
