@@ -34,7 +34,9 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
     options?: EditorOptions,
   ) {
     super(tui, theme, keybindings, options);
-    this.vim = createActor(vimMachine, { input: { editor: this } }).start();
+    this.vim = createActor(vimMachine, {
+      input: { editor: this.vimEditor },
+    }).start();
     this.appKeybindings = keybindings;
     this.tui.setShowHardwareCursor(true);
     this.syncCursorStyle();

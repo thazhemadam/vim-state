@@ -1,4 +1,4 @@
-/** Supported cursor motions understood by the current Vim editor mixin. */
+/** Supported cursor motions understood by the current Vim editor core. */
 export type VimMotion =
   | "left"
   | "down"
@@ -65,7 +65,7 @@ export interface VimEditorApi {
 /** Constructor accepted by the TypeScript mixin class-expression pattern. */
 export type Constructor<T = {}> = new (...args: any[]) => T;
 
-/** Primitive host-editor surface required by the reusable Vim mixin. */
+/** Primitive host-editor surface required by the reusable Vim composition mixin. */
 export interface VimEditorHost {
   getCursor(): VimPosition;
   getLines(): string[];

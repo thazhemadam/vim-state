@@ -1,42 +1,5 @@
-import {
-  ARROW_DOWN,
-  ARROW_RIGHT,
-  ARROW_UP,
-  LINE_START,
-  NOUN_BY_KEY,
-  OPERATOR_KEY,
-} from "./constants.js";
-import type { VimEditorHost, VimNoun, VimOperator } from "./types.js";
-
-export function cursor(editor: VimEditorHost): { line: number; col: number } {
-  return editor.getCursor();
-}
-
-export function currentLine(editor: VimEditorHost): string {
-  return editor.getLines()[cursor(editor).line] ?? "";
-}
-
-/** Move to a zero-based position using host editor cursor primitives. */
-export function moveCursorToPosition(
-  editor: VimEditorHost,
-  position: { line: number; col: number },
-): void {
-  while (cursor(editor).line < position.line) {
-    editor.sendInputToEditor(ARROW_DOWN);
-  }
-  while (cursor(editor).line > position.line) {
-    editor.sendInputToEditor(ARROW_UP);
-  }
-  moveCaretToColumn(editor, position.col);
-}
-
-/** Move to a zero-based column using host editor cursor primitives. */
-export function moveCaretToColumn(editor: VimEditorHost, column: number): void {
-  editor.sendInputToEditor(LINE_START);
-  for (let i = 0; i < column; i += 1) {
-    editor.sendInputToEditor(ARROW_RIGHT);
-  }
-}
+import { NOUN_BY_KEY, OPERATOR_KEY } from "./constants.js";
+import type { VimNoun, VimOperator } from "./types.js";
 
 /** Last valid Normal-mode cursor column for a line; empty lines stay at column 0. */
 export function normalMaxColumn(line: string): number {
