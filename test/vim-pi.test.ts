@@ -438,6 +438,36 @@ test("VimPiEditor stores deleted text in the unnamed register", () => {
   }
 });
 
+test("VimPiEditor puts unnamed register text", () => {
+  for (const spec of [
+    {
+      name: "p with no register does nothing",
+      text: "abc",
+      keys: [ESC, "0", "p"],
+      textAfter: "abc",
+      mode: "normal",
+    },
+    {
+      name: "p puts charwise text after cursor",
+      text: "abc",
+      keys: [ESC, "0", "l", "x", "p"],
+      textAfter: "acb",
+      mode: "normal",
+    },
+    {
+      name: "p puts linewise text below current line",
+      text: "one\ntwo",
+      keys: [ESC, "k", "d", "d", "p"],
+      textAfter: "two\none",
+      mode: "normal",
+    },
+  ] as const) {
+    const editor = createEditorWithText(spec.text);
+    play(editor, spec.keys);
+    assertEditor(editor, { text: spec.textAfter, mode: spec.mode }, spec.name);
+  }
+});
+
 test("VimPiEditor stores changed text in the unnamed register", () => {
   for (const spec of [
     {

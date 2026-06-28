@@ -96,6 +96,20 @@ export function VimEditor<TBase extends Constructor<VimEditorHost>>(
       return register;
     }
 
+    /** Put unnamed-register text after the cursor or below the current line. */
+    put(register: VimRegister): void {
+      if (register.type === "linewise") {
+        this.placeCaretAtLineEnd();
+        insertText(this, NEWLINE + register.text.replace(/\n$/, ""));
+        this.clampCursorColumn();
+        return;
+      }
+
+      this.placeCaretAfterCursor();
+      insertText(this, register.text);
+      this.move("left");
+    }
+
     /** Replace the Normal-mode character under the cursor and keep the cursor on the replacement. */
     replaceCharUnderCursor(char: string): void {
       if (cursor(this).col >= currentLine(this).length) {
@@ -114,4 +128,11 @@ export function VimEditor<TBase extends Constructor<VimEditorHost>>(
       }
     }
   };
+}
+
+/** Send plain inserted text one character at a time; host editors parse keys, not strings. */
+function insertText(editor: VimEditorHost, text: string): void {
+  for (const char of text) {
+    editor.sendInputToEditor(char);
+  }
 }

@@ -69,6 +69,13 @@ export const vimMachine = setup({
         deleteForRegister(context, params.noun, context.count ?? 1) ??
         context.register,
     }),
+    put: ({ context }) => {
+      const register = context.register;
+      if (!register) {
+        return;
+      }
+      repeat(context, () => context.editor.put(register));
+    },
     replaceCharUnderCursor: ({ context }, params: { char: string }) =>
       context.editor.replaceCharUnderCursor(params.char),
   },
@@ -281,6 +288,10 @@ export const vimMachine = setup({
               { type: "delete", params: { noun: "left" } },
               { type: "clearCount" },
             ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "p" } },
+            actions: [{ type: "put" }, { type: "clearCount" }],
           },
           { actions: { type: "clearCount" } },
         ],
