@@ -11,7 +11,7 @@ import {
   type TUI,
 } from "@earendil-works/pi-tui";
 
-import type { VimEditor } from "../../vim/editor.js";
+import type { VimEditorApi } from "../../vim/editor.js";
 import { vimMachine, type VimSnapshot } from "../../vim/machine.js";
 import { getVimMode, getVimModeLabel } from "../../vim/selectors.js";
 import { isPrintablePiInput, piInputToVimEvent } from "./keymap.js";
@@ -27,7 +27,7 @@ const NEWLINE = "\n";
 const DELETE_FORWARD = "\x1b[3~"; // Delete
 const DELETE_BACKWARD = "\x7f"; // Backspace
 
-export class VimPiEditor extends CustomEditor implements VimEditor {
+export class VimPiEditor extends CustomEditor implements VimEditorApi {
   private readonly vim: ActorRefFrom<typeof vimMachine>;
   private cursorStyle: "bar" | "block" | undefined;
   private readonly appKeybindings: KeybindingsManager;

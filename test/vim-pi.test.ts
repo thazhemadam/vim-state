@@ -7,12 +7,12 @@ import { matchesKey } from "@earendil-works/pi-tui";
 import { createActor } from "xstate";
 
 import { normalizePiKey } from "../src/adapters/pi/keymap.js";
-import type { VimEditor } from "../src/vim/editor.js";
+import type { VimEditorApi } from "../src/vim/editor.js";
 import { vimMachine } from "../src/vim/machine.js";
 import { getVimMode } from "../src/vim/selectors.js";
 
 function createVimCore(calls: string[] = []) {
-  const editor: VimEditor = {
+  const editor: VimEditorApi = {
     placeCaretAfterCursor: () => calls.push("placeCaretAfterCursor"),
     placeCaretAtLineEnd: () => calls.push("placeCaretAtLineEnd"),
     moveCursorLeft: () => calls.push("moveCursorLeft"),

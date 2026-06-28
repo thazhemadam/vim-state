@@ -1,4 +1,4 @@
-export interface VimEditor {
+export interface VimEditorApi {
   placeCaretAfterCursor(): void;
   placeCaretAtLineEnd(): void;
   moveCursorLeft(): void;

@@ -1,8 +1,8 @@
-import type { VimEditor } from "./editor.js";
+import type { VimEditorApi } from "./editor.js";
 
 /** Runtime dependencies and bounded parser data owned by the Vim machine. */
 export interface VimContext {
-  editor: VimEditor;
+  editor: VimEditorApi;
 }
 
 export type VimInput = VimContext;
