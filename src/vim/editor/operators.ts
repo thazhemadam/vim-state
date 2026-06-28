@@ -26,16 +26,21 @@ import {
 export function resolveMotion(
   editor: VimEditorHost,
   noun: VimMotion,
+  count = 1,
 ): VimMotionResult | undefined {
   const start = cursor(editor);
-  const line = currentLine(editor);
+  const lines = editor.getLines();
+  const steps = Math.max(count, 1);
 
   switch (noun) {
     case "left": {
       if (start.col === 0) {
         return undefined;
       }
-      const destination = { line: start.line, col: start.col - 1 };
+      const destination = {
+        line: start.line,
+        col: Math.max(start.col - steps, 0),
+      };
       return {
         range: { type: "charwise", start: destination, end: start },
         destination,
@@ -43,10 +48,14 @@ export function resolveMotion(
     }
 
     case "right": {
+      const line = lines[start.line] ?? "";
       if (line.length === 0) {
         return undefined;
       }
-      const end = { line: start.line, col: start.col + 1 };
+      const end = {
+        line: start.line,
+        col: Math.min(start.col + steps, line.length),
+      };
       return {
         range: { type: "charwise", start, end },
         destination: {
@@ -57,8 +66,8 @@ export function resolveMotion(
     }
 
     case "down": {
-      const line = start.line + 1;
-      if (line >= editor.getLines().length) {
+      const line = Math.min(start.line + steps, lines.length - 1);
+      if (line === start.line) {
         return undefined;
       }
       return {
@@ -68,8 +77,8 @@ export function resolveMotion(
     }
 
     case "up": {
-      const line = start.line - 1;
-      if (line < 0) {
+      const line = Math.max(start.line - steps, 0);
+      if (line === start.line) {
         return undefined;
       }
       return {
@@ -86,17 +95,21 @@ export function resolveMotion(
       };
     }
 
-    case "lineEnd":
+    case "lineEnd": {
+      const line = Math.min(start.line + steps - 1, lines.length - 1);
+      const text = lines[line] ?? "";
       return {
         range: {
           type: "charwise",
           start,
-          end: { line: start.line, col: line.length },
+          end: { line, col: text.length },
         },
-        destination: { line: start.line, col: normalMaxColumn(line) },
+        destination: { line, col: normalMaxColumn(text) },
       };
+    }
 
     case "firstNonBlank": {
+      const line = lines[start.line] ?? "";
       const destination = { line: start.line, col: firstNonBlankColumn(line) };
       return {
         range: normalizedCharRange(start, destination),
@@ -105,7 +118,7 @@ export function resolveMotion(
     }
 
     case "nextWord": {
-      const destination = nextWordPosition(editor.getLines(), start);
+      const destination = countedWordPosition(lines, start, noun, steps);
       return {
         range: { type: "charwise", start, end: destination },
         destination,
@@ -113,7 +126,7 @@ export function resolveMotion(
     }
 
     case "previousWord": {
-      const destination = previousWordPosition(editor.getLines(), start);
+      const destination = countedWordPosition(lines, start, noun, steps);
       return {
         range: normalizedCharRange(start, destination),
         destination,
@@ -121,10 +134,10 @@ export function resolveMotion(
     }
 
     case "endOfWord": {
-      const destination = endOfWordPosition(editor.getLines(), start);
+      const destination = countedWordPosition(lines, start, noun, steps);
       // At the end of the final word, `e` has no motion. Operators like `de`
       // should therefore leave the buffer untouched.
-      if (destination.line === start.line && destination.col === start.col) {
+      if (samePosition(start, destination)) {
         return undefined;
       }
 
@@ -156,10 +169,14 @@ export function resolveOperatorRange(
     return {
       type: "linewise",
       startLine: start.line,
-      endLine: Math.min(start.line + count - 1, editor.getLines().length - 1),
+      endLine: Math.min(
+        start.line + Math.max(count, 1) - 1,
+        editor.getLines().length - 1,
+      ),
     };
   }
-  return resolveMotion(editor, noun)?.range;
+
+  return resolveMotion(editor, noun, count)?.range;
 }
 
 /** Apply a resolved operator range as a delete and return the removed register text. */
@@ -284,6 +301,44 @@ function clampedPosition(
       normalMaxColumn(editor.getLines()[position.line] ?? ""),
     ),
   };
+}
+
+/** Resolve repeated word-ish motions without mutating the host editor. */
+function countedWordPosition(
+  lines: string[],
+  start: VimPosition,
+  noun: "nextWord" | "previousWord" | "endOfWord",
+  count: number,
+): VimPosition {
+  let position = start;
+  for (let i = 0; i < count; ++i) {
+    const next = wordPosition(lines, position, noun);
+    if (samePosition(next, position)) {
+      return next;
+    }
+    position = next;
+  }
+  return position;
+}
+
+/** Resolve one supported word-ish motion. */
+function wordPosition(
+  lines: string[],
+  position: VimPosition,
+  noun: "nextWord" | "previousWord" | "endOfWord",
+): VimPosition {
+  switch (noun) {
+    case "nextWord":
+      return nextWordPosition(lines, position);
+    case "previousWord":
+      return previousWordPosition(lines, position);
+    case "endOfWord":
+      return endOfWordPosition(lines, position);
+  }
+}
+
+function samePosition(left: VimPosition, right: VimPosition): boolean {
+  return left.line === right.line && left.col === right.col;
 }
 
 /** Return a forward charwise range even when the motion destination is before the cursor. */

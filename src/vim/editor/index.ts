@@ -90,12 +90,12 @@ export function VimEditor<TBase extends Constructor<VimEditorHost>>(
      * operators (`dd`), so range resolution is separate from cursor movement.
      */
     delete(noun: VimNoun, count = 1): VimRegister | undefined {
-      return applyRepeatedOperator(this, noun, count, applyDeleteRange);
+      return applyOperator(this, noun, count, applyDeleteRange);
     }
 
     /** Apply a supported operator noun as a change and return the changed text. */
     change(noun: VimNoun, count = 1): VimRegister | undefined {
-      return applyRepeatedOperator(this, noun, count, applyChangeRange);
+      return applyOperator(this, noun, count, applyChangeRange);
     }
 
     /** Put unnamed-register text before/after the cursor, or above/below the current line. */
@@ -148,52 +148,21 @@ function insertText(editor: VimEditorHost, text: string): void {
 
 type ApplyRange = (editor: VimEditorHost, range: VimRange) => VimRegister;
 
-/** Apply a counted operator noun and combine repeated payloads in buffer order. */
-function applyRepeatedOperator(
+/** Resolve a counted operator noun once, then apply the resulting range once. */
+function applyOperator(
   editor: VimEditorHost & { clampCursorColumn(): void },
   noun: VimNoun,
   count: number,
   applyRange: ApplyRange,
 ): VimRegister | undefined {
-  if (noun === "line") {
-    const range = resolveOperatorRange(editor, noun, count);
-    return range ? applyRange(editor, range) : undefined;
+  const range = resolveOperatorRange(editor, noun, count);
+  if (!range) {
+    return undefined;
   }
 
-  let register: VimRegister | undefined;
-  for (let i = 0; i < count; ++i) {
-    const range = resolveOperatorRange(editor, noun);
-    if (!range) {
-      continue;
-    }
-
-    const payload = applyRange(editor, range);
-    register = appendRegister(register, payload, noun);
-    if (noun !== "left") {
-      editor.clampCursorColumn();
-    }
+  const register = applyRange(editor, range);
+  if (noun !== "left") {
+    editor.clampCursorColumn();
   }
   return register;
-}
-
-/** Append repeated operator payloads in buffer order, including backward motions. */
-function appendRegister(
-  register: VimRegister | undefined,
-  payload: VimRegister,
-  noun: VimNoun,
-): VimRegister {
-  if (!register) {
-    return payload;
-  }
-  return {
-    type: payload.type,
-    text: deletesBackward(noun)
-      ? payload.text + register.text
-      : register.text + payload.text,
-  };
-}
-
-/** Return true when repeated changes walk backward through the buffer. */
-function deletesBackward(noun: VimNoun): boolean {
-  return noun === "left" || noun === "previousWord" || noun === "up";
 }

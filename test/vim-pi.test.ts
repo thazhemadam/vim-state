@@ -328,6 +328,20 @@ test("VimPiEditor applies delete operator motions", () => {
       cursor: { line: 0, col: 0 },
     },
     {
+      name: "2dj deletes current and two following lines once",
+      text: "one\ntwo\nthree\nfour",
+      keys: [ESC, "k", "k", "k", "2", "d", "j"],
+      textAfter: "four",
+      cursor: { line: 0, col: 2 },
+    },
+    {
+      name: "d2$ deletes through the next line end once",
+      text: "one\ntwo\nthree",
+      keys: [ESC, "k", "k", "0", "d", "2", "$"],
+      textAfter: "\nthree",
+      cursor: { line: 0, col: 0 },
+    },
+    {
       name: "d$ deletes to line end",
       text: "one two",
       keys: [ESC, "0", "l", "l", "l", "l", "d", "$"],
@@ -635,6 +649,13 @@ test("VimPiEditor applies change operator motions", () => {
       text: "one two three four five",
       keys: [ESC, "0", "2", "c", "2", "w", "X"],
       textAfter: "Xfive",
+      cursor: { line: 0, col: 1 },
+    },
+    {
+      name: "c2$ changes through the next line end once",
+      text: "one\ntwo\nthree",
+      keys: [ESC, "k", "k", "0", "c", "2", "$", "X"],
+      textAfter: "X\nthree",
       cursor: { line: 0, col: 1 },
     },
     {
