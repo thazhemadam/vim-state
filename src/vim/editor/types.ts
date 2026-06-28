@@ -1,6 +1,12 @@
 /** Target accepted by line-jump commands. Numbers are 1-based like Vim counts. */
 export type VimLineTarget = number | "first" | "last";
 
+/** Single-character search operation that waits for a target character. */
+export type VimFindOperation = "find" | "till";
+
+/** Direction for single-character search operations. */
+export type VimFindDirection = "forward" | "backward";
+
 /** Supported cursor motions understood by the current Vim editor core. */
 export type VimMotion =
   | "left"
@@ -59,6 +65,12 @@ export interface VimEditorApi {
   insertLineAbove(): void;
   joinLines(count?: number): void;
   goToLine(line: VimLineTarget): void;
+  moveToChar(
+    operation: VimFindOperation,
+    direction: VimFindDirection,
+    char: string,
+    count?: number,
+  ): void;
   placeCaretAtLineStart(): void;
   placeCaretAfterCursor(): void;
   placeCaretAtLineEnd(): void;

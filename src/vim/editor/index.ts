@@ -20,6 +20,8 @@ import type {
   Constructor,
   VimEditorApi,
   VimEditorHost,
+  VimFindDirection,
+  VimFindOperation,
   VimLineTarget,
   VimMotion,
   VimMotionResult,
@@ -33,6 +35,8 @@ import { firstNonBlankColumn, normalMaxColumn, toggledCase } from "./utils.js";
 export type {
   VimEditorApi,
   VimEditorHost,
+  VimFindDirection,
+  VimFindOperation,
   VimLineTarget,
   VimMotion,
   VimNoun,
@@ -88,6 +92,20 @@ class VimEditorCore implements VimEditorApi {
       line: clampedLine,
       col: firstNonBlankColumn(this.lines[clampedLine] ?? ""),
     });
+  }
+
+  /** Move to or before a target character on the current line. */
+  moveToChar(
+    operation: VimFindOperation,
+    direction: VimFindDirection,
+    char: string,
+    count = 1,
+  ): void {
+    const result = this.resolveFindMotion(operation, direction, char, count);
+    if (!result) {
+      return;
+    }
+    this.moveCursorToPosition(result.destination);
   }
 
   /** Place the Insert caret at the start of the current line. */
@@ -336,6 +354,36 @@ class VimEditorCore implements VimEditorApi {
     }
   }
 
+  /** Resolve an f/F/t/T motion on the current line. */
+  private resolveFindMotion(
+    operation: VimFindOperation,
+    direction: VimFindDirection,
+    char: string,
+    count = 1,
+  ): VimMotionResult | undefined {
+    const start = this.cursor;
+    const destination = findCharPosition(
+      this.currentLine,
+      start.col,
+      operation,
+      direction,
+      char,
+      count,
+    );
+    if (!destination) {
+      return undefined;
+    }
+
+    const end =
+      direction === "forward"
+        ? Math.min(destination + 1, this.currentLine.length)
+        : destination;
+    return {
+      range: normalizedCharRange(start, { line: start.line, col: end }),
+      destination: { line: start.line, col: destination },
+    };
+  }
+
   /**
    * Resolve an operator noun into the buffer range it covers.
    *
@@ -374,6 +422,21 @@ class VimEditorCore implements VimEditorApi {
       this.clampCursorColumn();
     }
     return register;
+  }
+
+  /** Apply a resolved range for the requested operator. */
+  private applyRange(
+    operator: VimOperator["name"],
+    range: VimRange,
+  ): VimRegister {
+    switch (operator) {
+      case "change":
+        return this.applyChangeRange(range);
+      case "delete":
+        return this.applyDeleteRange(range);
+      case "yank":
+        return this.registerForRange(range);
+    }
   }
 
   /** Apply a resolved operator range as a delete and return the removed register text. */
@@ -538,5 +601,31 @@ export function VimEditor<TBase extends Constructor<VimEditorHost>>(
   return class VimEditor extends Base {
     readonly vimEditor = new VimEditorCore(this);
   };
+}
+
+/** Return the target column for an f/F/t/T search, or undefined when not found. */
+function findCharPosition(
+  line: string,
+  column: number,
+  operation: VimFindOperation,
+  direction: VimFindDirection,
+  char: string,
+  count: number,
+): number | undefined {
+  const step = direction === "backward" ? -1 : 1;
+  let matches = Math.max(count, 1);
+
+  for (let col = column + step; col >= 0 && col < line.length; col += step) {
+    if (line[col] !== char) {
+      continue;
+    }
+    matches -= 1;
+    if (matches === 0) {
+      const offset = operation === "till" ? -step : 0;
+      return Math.min(Math.max(col + offset, 0), normalMaxColumn(line));
+    }
+  }
+
+  return undefined;
 }
 

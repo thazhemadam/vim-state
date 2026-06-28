@@ -244,6 +244,45 @@ test("VimPiEditor applies Normal-mode word motions", () => {
   }
 });
 
+test("VimPiEditor applies Normal-mode find and till motions", () => {
+  for (const spec of [
+    {
+      name: "f moves forward to the target character",
+      text: "abacad",
+      keys: [ESC, "0", "f", "c"],
+      cursor: { line: 0, col: 3 },
+    },
+    {
+      name: "counted f moves to the counted target character",
+      text: "abacad",
+      keys: [ESC, "0", "2", "f", "a"],
+      cursor: { line: 0, col: 4 },
+    },
+    {
+      name: "F moves backward to the target character",
+      text: "abacad",
+      keys: [ESC, "$", "F", "a"],
+      cursor: { line: 0, col: 4 },
+    },
+    {
+      name: "t moves forward until before the target character",
+      text: "abacad",
+      keys: [ESC, "0", "t", "c"],
+      cursor: { line: 0, col: 2 },
+    },
+    {
+      name: "T moves backward until after the target character",
+      text: "abacad",
+      keys: [ESC, "$", "T", "a"],
+      cursor: { line: 0, col: 5 },
+    },
+  ] as const) {
+    const editor = createEditorWithText(spec.text);
+    play(editor, spec.keys);
+    assertEditor(editor, { cursor: spec.cursor, mode: "normal" }, spec.name);
+  }
+});
+
 test("VimPiEditor repeats a counted Normal-mode command", () => {
   const editor = createEditorWithText("abcdef");
 

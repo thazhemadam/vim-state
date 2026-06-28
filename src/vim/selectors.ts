@@ -13,6 +13,10 @@ export function getVimMode(snapshot: VimSnapshot): VimMode {
     case "insert":
       return "insert";
     case "normal":
+    case "find-forward":
+    case "find-backward":
+    case "till-forward":
+    case "till-backward":
     case "g-prefix":
     case "operator-pending":
     case "replace-once":

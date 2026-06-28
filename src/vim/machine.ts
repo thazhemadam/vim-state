@@ -2,6 +2,8 @@ import { assign, setup, type SnapshotFrom } from "xstate";
 
 import { type VimContext, type VimInput } from "./context.js";
 import type {
+  VimFindDirection,
+  VimFindOperation,
   VimLineTarget,
   VimMotion,
   VimNoun,
@@ -43,6 +45,16 @@ export const vimMachine = setup({
       }
       repeat(context, () => context.editor.move(noun));
     },
+    moveToChar: (
+      { context, event },
+      params: { operation: VimFindOperation; direction: VimFindDirection },
+    ) =>
+      context.editor.moveToChar(
+        params.operation,
+        params.direction,
+        event.key,
+        context.count ?? 1,
+      ),
     insertLineBelow: ({ context }) => context.editor.insertLineBelow(),
     insertLineAbove: ({ context }) => context.editor.insertLineAbove(),
     joinLines: ({ context }) => context.editor.joinLines(context.count ?? 2),
@@ -160,6 +172,98 @@ export const vimMachine = setup({
             },
           },
           { target: "normal" },
+        ],
+      },
+    },
+    "find-forward": {
+      on: {
+        KEY: [
+          {
+            guard: { type: "keyIs", params: { key: "escape" } },
+            target: "normal",
+            actions: { type: "clearCount" },
+          },
+          {
+            guard: { type: "keyIsPrintable" },
+            target: "normal",
+            actions: [
+              {
+                type: "moveToChar",
+                params: { operation: "find", direction: "forward" },
+              },
+              { type: "clearCount" },
+            ],
+          },
+          { target: "normal", actions: { type: "clearCount" } },
+        ],
+      },
+    },
+    "find-backward": {
+      on: {
+        KEY: [
+          {
+            guard: { type: "keyIs", params: { key: "escape" } },
+            target: "normal",
+            actions: { type: "clearCount" },
+          },
+          {
+            guard: { type: "keyIsPrintable" },
+            target: "normal",
+            actions: [
+              {
+                type: "moveToChar",
+                params: { operation: "find", direction: "backward" },
+              },
+              { type: "clearCount" },
+            ],
+          },
+          { target: "normal", actions: { type: "clearCount" } },
+        ],
+      },
+    },
+    "till-forward": {
+      on: {
+        KEY: [
+          {
+            guard: { type: "keyIs", params: { key: "escape" } },
+            target: "normal",
+            actions: { type: "clearCount" },
+          },
+          {
+            guard: { type: "keyIsPrintable" },
+            target: "normal",
+            actions: [
+              {
+                type: "moveToChar",
+                params: { operation: "till", direction: "forward" },
+              },
+              { type: "clearCount" },
+            ],
+          },
+          { target: "normal", actions: { type: "clearCount" } },
+        ],
+      },
+    },
+    "till-backward": {
+      on: {
+        KEY: [
+          {
+            guard: { type: "keyIs", params: { key: "escape" } },
+            target: "normal",
+            actions: { type: "clearCount" },
+          },
+          {
+            guard: { type: "keyIsPrintable" },
+            target: "normal",
+            actions: [
+              {
+                type: "moveToChar",
+                params: { operation: "till", direction: "backward" },
+              },
+              { type: "clearCount" },
+            ],
+          },
+          { target: "normal", actions: { type: "clearCount" } },
         ],
       },
     },
@@ -302,6 +406,22 @@ export const vimMachine = setup({
               { type: "goToLine", params: { line: "last" } },
               { type: "clearCount" },
             ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "f" } },
+            target: "find-forward",
+          },
+          {
+            guard: { type: "keyIs", params: { key: "F" } },
+            target: "find-backward",
+          },
+          {
+            guard: { type: "keyIs", params: { key: "t" } },
+            target: "till-forward",
+          },
+          {
+            guard: { type: "keyIs", params: { key: "T" } },
+            target: "till-backward",
           },
           {
             guard: { type: "keyIs", params: { key: "g" } },
