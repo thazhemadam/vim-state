@@ -1,6 +1,7 @@
 import { assign, setup, type SnapshotFrom } from "xstate";
 
 import { type VimContext, type VimInput, type VimOperator } from "./context.js";
+import type { VimDeleteTarget } from "./editor.js";
 import type { VimEvent } from "./events.js";
 import { initialVimMode } from "./state.js";
 
@@ -45,16 +46,8 @@ export const vimMachine = setup({
     insertLineAbove: ({ context }) => context.editor.insertLineAbove(),
     placeCaretAtLineStart: ({ context }) =>
       context.editor.placeCaretAtLineStart(),
-    deleteCharUnderCursor: ({ context }) =>
-      repeat(context, () => context.editor.deleteCharUnderCursor()),
-    deleteCharBeforeCursor: ({ context }) =>
-      repeat(context, () => context.editor.deleteCharBeforeCursor()),
-    deleteToNextWord: ({ context }) =>
-      repeat(context, () => context.editor.deleteToNextWord()),
-    deleteToLineEnd: ({ context }) =>
-      repeat(context, () => context.editor.deleteToLineEnd()),
-    deleteCurrentLine: ({ context }) =>
-      repeat(context, () => context.editor.deleteCurrentLine()),
+    delete: ({ context }, params: { target: VimDeleteTarget }) =>
+      repeat(context, () => context.editor.delete(params.target)),
     replaceCharUnderCursor: ({ context }, params: { char: string }) =>
       context.editor.replaceCharUnderCursor(params.char),
     clampCursorColumn: ({ context }) => context.editor.clampCursorColumn(),
@@ -100,7 +93,7 @@ export const vimMachine = setup({
           },
           {
             guard: { type: "keyIsPrintable" },
-            actions: { type: "deleteCharUnderCursor" },
+            actions: { type: "delete", params: { target: "charUnderCursor" } },
           },
         ],
       },
@@ -139,7 +132,7 @@ export const vimMachine = setup({
             },
             target: "normal",
             actions: [
-              { type: "deleteToNextWord" },
+              { type: "delete", params: { target: "nextWord" } },
               { type: "clearOperator" },
               { type: "clearCount" },
             ],
@@ -151,7 +144,7 @@ export const vimMachine = setup({
             },
             target: "normal",
             actions: [
-              { type: "deleteToLineEnd" },
+              { type: "delete", params: { target: "lineEnd" } },
               { type: "clearOperator" },
               { type: "clearCount" },
             ],
@@ -163,7 +156,7 @@ export const vimMachine = setup({
             },
             target: "normal",
             actions: [
-              { type: "deleteCurrentLine" },
+              { type: "delete", params: { target: "line" } },
               { type: "clearOperator" },
               { type: "clearCount" },
             ],
@@ -307,7 +300,7 @@ export const vimMachine = setup({
           {
             guard: { type: "keyIs", params: { key: "x" } },
             actions: [
-              { type: "deleteCharUnderCursor" },
+              { type: "delete", params: { target: "charUnderCursor" } },
               { type: "clampCursorColumn" },
               { type: "clearCount" },
             ],
@@ -315,7 +308,7 @@ export const vimMachine = setup({
           {
             guard: { type: "keyIs", params: { key: "X" } },
             actions: [
-              { type: "deleteCharBeforeCursor" },
+              { type: "delete", params: { target: "charBeforeCursor" } },
               { type: "moveCursorLeft" },
               { type: "clearCount" },
             ],

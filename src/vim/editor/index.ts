@@ -9,7 +9,12 @@ import {
   LINE_START,
   NEWLINE,
 } from "./constants.js";
-import type { Constructor, VimEditorApi, VimEditorHost } from "./types.js";
+import type {
+  Constructor,
+  VimDeleteTarget,
+  VimEditorApi,
+  VimEditorHost,
+} from "./types.js";
 import {
   currentLine,
   cursor,
@@ -24,7 +29,7 @@ import {
   previousWordPosition,
 } from "./utils.js";
 
-export type { VimEditorApi, VimEditorHost } from "./types.js";
+export type { VimDeleteTarget, VimEditorApi, VimEditorHost } from "./types.js";
 
 export function VimEditor<TBase extends Constructor<VimEditorHost>>(
   Base: TBase,
@@ -139,49 +144,49 @@ export function VimEditor<TBase extends Constructor<VimEditorHost>>(
       this.sendInputToEditor(LINE_END);
     }
 
-    /** Delete the Normal-mode character under the cursor without crossing lines. */
-    deleteCharUnderCursor(): void {
-      if (cursor(this).col < currentLine(this).length) {
-        this.sendInputToEditor(DELETE_FORWARD);
+    /** Apply a supported Normal-mode delete target. */
+    delete(target: VimDeleteTarget): void {
+      switch (target) {
+        case "charUnderCursor":
+          if (cursor(this).col < currentLine(this).length) {
+            this.sendInputToEditor(DELETE_FORWARD);
+          }
+          return;
+        case "charBeforeCursor": {
+          const { col } = cursor(this);
+          if (col === 0) return;
+
+          this.sendInputToEditor(DELETE_BACKWARD);
+
+          const targetCol = Math.min(col, currentLine(this).length);
+          while (cursor(this).col < targetCol)
+            this.sendInputToEditor(ARROW_RIGHT);
+          return;
+        }
+        case "nextWord": {
+          const target = nextWordPosition(this.getLines(), cursor(this));
+          deleteForward(
+            this,
+            deleteDistance(this.getLines(), cursor(this), target),
+          );
+          this.clampCursorColumn();
+          return;
+        }
+        case "lineEnd":
+          deleteForward(this, currentLine(this).length - cursor(this).col);
+          this.clampCursorColumn();
+          return;
+        case "line": {
+          const line = cursor(this).line;
+          const lineLength = currentLine(this).length;
+          this.moveCursorToLineStart();
+          deleteForward(this, lineLength);
+          if (line < this.getLines().length - 1)
+            this.sendInputToEditor(DELETE_FORWARD);
+          this.clampCursorColumn();
+          return;
+        }
       }
-    }
-
-    /** Delete the character before the Normal-mode cursor without crossing lines. */
-    deleteCharBeforeCursor(): void {
-      const { col } = cursor(this);
-      if (col === 0) return;
-
-      this.sendInputToEditor(DELETE_BACKWARD);
-
-      const targetCol = Math.min(col, currentLine(this).length);
-      while (cursor(this).col < targetCol) this.sendInputToEditor(ARROW_RIGHT);
-    }
-
-    /** Delete from the Normal-mode cursor to the start of the next word-like run. */
-    deleteToNextWord(): void {
-      const target = nextWordPosition(this.getLines(), cursor(this));
-      deleteForward(
-        this,
-        deleteDistance(this.getLines(), cursor(this), target),
-      );
-      this.clampCursorColumn();
-    }
-
-    /** Delete from the Normal-mode cursor through the end of the current line. */
-    deleteToLineEnd(): void {
-      deleteForward(this, currentLine(this).length - cursor(this).col);
-      this.clampCursorColumn();
-    }
-
-    /** Delete the current line and leave the cursor at the start of the joined line. */
-    deleteCurrentLine(): void {
-      const line = cursor(this).line;
-      const lineLength = currentLine(this).length;
-      this.moveCursorToLineStart();
-      deleteForward(this, lineLength);
-      if (line < this.getLines().length - 1)
-        this.sendInputToEditor(DELETE_FORWARD);
-      this.clampCursorColumn();
     }
 
     /** Replace the Normal-mode character under the cursor and keep the cursor on the replacement. */
@@ -190,7 +195,7 @@ export function VimEditor<TBase extends Constructor<VimEditorHost>>(
         return;
       }
 
-      this.deleteCharUnderCursor();
+      this.delete("charUnderCursor");
       this.sendInputToEditor(char);
       this.moveCursorLeft();
     }

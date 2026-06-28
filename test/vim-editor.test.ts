@@ -27,7 +27,7 @@ test("VimEditor mixin forwards semantic edits to the host editor", () => {
   const editor = new FakeVimEditor();
 
   editor.moveCursorLeft();
-  editor.deleteCharUnderCursor();
+  editor.delete("charUnderCursor");
 
   assert.deepEqual(editor.inputs, ["\x1b[D", "\x1b[3~"]);
   assert.deepEqual(editor.lines, ["abc"]);

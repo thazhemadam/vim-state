@@ -1,3 +1,10 @@
+export type VimDeleteTarget =
+  | "charUnderCursor"
+  | "charBeforeCursor"
+  | "nextWord"
+  | "lineEnd"
+  | "line";
+
 export interface VimEditorApi {
   moveCursorLeft(): void;
   moveCursorDown(): void;
@@ -14,11 +21,7 @@ export interface VimEditorApi {
   placeCaretAtLineStart(): void;
   placeCaretAfterCursor(): void;
   placeCaretAtLineEnd(): void;
-  deleteCharUnderCursor(): void;
-  deleteCharBeforeCursor(): void;
-  deleteToNextWord(): void;
-  deleteToLineEnd(): void;
-  deleteCurrentLine(): void;
+  delete(target: VimDeleteTarget): void;
   replaceCharUnderCursor(char: string): void;
   clampCursorColumn(): void;
 }
