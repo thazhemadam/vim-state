@@ -96,16 +96,23 @@ export function VimEditor<TBase extends Constructor<VimEditorHost>>(
       return register;
     }
 
-    /** Put unnamed-register text after the cursor or below the current line. */
-    put(register: VimRegister): void {
+    /** Put unnamed-register text before/after the cursor, or above/below the current line. */
+    put(register: VimRegister, placement: "before" | "after"): void {
       if (register.type === "linewise") {
-        this.placeCaretAtLineEnd();
-        insertText(this, NEWLINE + register.text.replace(/\n$/, ""));
+        if (placement === "before") {
+          this.placeCaretAtLineStart();
+          insertText(this, register.text);
+        } else {
+          this.placeCaretAtLineEnd();
+          insertText(this, NEWLINE + register.text.replace(/\n$/, ""));
+        }
         this.clampCursorColumn();
         return;
       }
 
-      this.placeCaretAfterCursor();
+      if (placement === "after") {
+        this.placeCaretAfterCursor();
+      }
       insertText(this, register.text);
       this.move("left");
     }

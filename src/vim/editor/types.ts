@@ -49,7 +49,7 @@ export interface VimEditorApi {
   placeCaretAfterCursor(): void;
   placeCaretAtLineEnd(): void;
   delete(noun: VimNoun): VimRegister | undefined;
-  put(register: VimRegister): void;
+  put(register: VimRegister, placement: "before" | "after"): void;
   replaceCharUnderCursor(char: string): void;
   clampCursorColumn(): void;
 }

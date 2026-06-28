@@ -448,6 +448,13 @@ test("VimPiEditor puts unnamed register text", () => {
       mode: "normal",
     },
     {
+      name: "P with no register does nothing",
+      text: "abc",
+      keys: [ESC, "0", "P"],
+      textAfter: "abc",
+      mode: "normal",
+    },
+    {
       name: "p puts charwise text after cursor",
       text: "abc",
       keys: [ESC, "0", "l", "x", "p"],
@@ -455,10 +462,24 @@ test("VimPiEditor puts unnamed register text", () => {
       mode: "normal",
     },
     {
+      name: "P puts charwise text before cursor",
+      text: "abc",
+      keys: [ESC, "0", "l", "x", "P"],
+      textAfter: "abc",
+      mode: "normal",
+    },
+    {
       name: "p puts linewise text below current line",
       text: "one\ntwo",
       keys: [ESC, "k", "d", "d", "p"],
       textAfter: "two\none",
+      mode: "normal",
+    },
+    {
+      name: "P puts linewise text above current line",
+      text: "one\ntwo",
+      keys: [ESC, "k", "d", "d", "P"],
+      textAfter: "one\ntwo",
       mode: "normal",
     },
   ] as const) {
