@@ -13,6 +13,7 @@ import type {
   VimDeleteTarget,
   VimEditorApi,
   VimEditorHost,
+  VimMotion,
 } from "./types.js";
 import {
   currentLine,
@@ -26,89 +27,78 @@ import {
   previousWordPosition,
 } from "./utils.js";
 
-export type { VimDeleteTarget, VimEditorApi, VimEditorHost } from "./types.js";
+export type {
+  VimDeleteTarget,
+  VimEditorApi,
+  VimEditorHost,
+  VimMotion,
+} from "./types.js";
 
 export function VimEditor<TBase extends Constructor<VimEditorHost>>(
   Base: TBase,
 ) {
   return class VimEditor extends Base implements VimEditorApi {
-    /** Move one column left without crossing to the previous line. */
-    moveCursorLeft(): void {
-      if (cursor(this).col === 0) return;
-      this.sendInputToEditor(ARROW_LEFT);
-    }
-
-    /** Move down, then clamp because Vim Normal mode cannot rest past the last character. */
-    moveCursorDown(): void {
-      if (cursor(this).line >= this.getLines().length - 1) return;
-      this.sendInputToEditor(ARROW_DOWN);
-      this.clampCursorColumn();
-    }
-
-    /** Move up, then clamp because target lines may be shorter than the source line. */
-    moveCursorUp(): void {
-      if (cursor(this).line === 0) return;
-      this.sendInputToEditor(ARROW_UP);
-      this.clampCursorColumn();
-    }
-
-    /** Move right only while another character exists under the Normal-mode cursor. */
-    moveCursorRight(): void {
-      if (cursor(this).col < normalMaxColumn(currentLine(this))) {
-        this.sendInputToEditor(ARROW_RIGHT);
+    /** Apply a supported Normal-mode cursor motion. */
+    move(motion: VimMotion): void {
+      switch (motion) {
+        case "left":
+          // Move one column left without crossing to the previous line.
+          if (cursor(this).col === 0) return;
+          this.sendInputToEditor(ARROW_LEFT);
+          return;
+        case "down":
+          // Move down, then clamp because Vim Normal mode cannot rest past the last character.
+          if (cursor(this).line >= this.getLines().length - 1) return;
+          this.sendInputToEditor(ARROW_DOWN);
+          this.clampCursorColumn();
+          return;
+        case "up":
+          // Move up, then clamp because target lines may be shorter than the source line.
+          if (cursor(this).line === 0) return;
+          this.sendInputToEditor(ARROW_UP);
+          this.clampCursorColumn();
+          return;
+        case "right":
+          // Move right only while another character exists under the Normal-mode cursor.
+          if (cursor(this).col < normalMaxColumn(currentLine(this))) {
+            this.sendInputToEditor(ARROW_RIGHT);
+          }
+          return;
+        case "lineStart":
+          // Move to the first column on the current line.
+          this.sendInputToEditor(LINE_START);
+          return;
+        case "lineEnd":
+          // Move to the last Normal-mode character on the current line.
+          this.sendInputToEditor(LINE_END);
+          this.clampCursorColumn();
+          return;
+        case "firstNonBlank":
+          // Move to the first non-blank character on the current line.
+          moveCaretToColumn(this, firstNonBlankColumn(currentLine(this)));
+          return;
+        case "nextWord":
+          // Move to the start of the next word-like run.
+          moveCursorToPosition(
+            this,
+            nextWordPosition(this.getLines(), cursor(this)),
+          );
+          return;
+        case "previousWord":
+          // Move to the start of the previous word-like run.
+          moveCursorToPosition(
+            this,
+            previousWordPosition(this.getLines(), cursor(this)),
+          );
+          return;
+        case "endOfWord":
+          // Move to the end of the current or next word-like run.
+          moveCursorToPosition(
+            this,
+            endOfWordPosition(this.getLines(), cursor(this)),
+          );
+          return;
       }
-    }
-
-    /** Move to the first column on the current line. */
-    moveCursorToLineStart(): void {
-      this.sendInputToEditor(LINE_START);
-    }
-
-    /** Move to the last Normal-mode character on the current line. */
-    moveCursorToLineEnd(): void {
-      this.sendInputToEditor(LINE_END);
-      this.clampCursorColumn();
-    }
-
-    /** Move to the first non-blank character on the current line. */
-    moveCursorToFirstNonBlank(): void {
-      moveCaretToColumn(this, firstNonBlankColumn(currentLine(this)));
-    }
-
-    /**
-     * Move to the start of the next word-like run.
-     *
-     * This implements the initial `w` subset: skip the current word/punctuation
-     * run, skip whitespace, then land on the next word or punctuation run. A run
-     * is a contiguous sequence of characters with the same `charType()`.
-     */
-    moveCursorToNextWord(): void {
-      const target = nextWordPosition(this.getLines(), cursor(this));
-      moveCursorToPosition(this, target);
-    }
-
-    /**
-     * Move to the start of the previous word-like run.
-     *
-     * This implements the initial `b` subset using the same run definition as
-     * `w`. From inside a run it lands on that run's first character; from the
-     * first character of a run it skips to the previous run.
-     */
-    moveCursorToPreviousWord(): void {
-      const target = previousWordPosition(this.getLines(), cursor(this));
-      moveCursorToPosition(this, target);
-    }
-
-    /**
-     * Move to the end of the current or next word-like run.
-     *
-     * This implements the initial `e` subset using the same run definition as
-     * `w`. From inside a run it lands on that run's last character; from the last
-     * character of a run it skips to the next run's last character.
-     */
-    moveCursorToEndOfWord(): void {
-      const target = endOfWordPosition(this.getLines(), cursor(this));
-      moveCursorToPosition(this, target);
     }
 
     /** Insert an empty line below the current line and leave the caret on it. */
@@ -163,7 +153,7 @@ export function VimEditor<TBase extends Constructor<VimEditorHost>>(
 
       this.delete("charUnderCursor");
       this.sendInputToEditor(char);
-      this.moveCursorLeft();
+      this.move("left");
     }
 
     /** Move left until the Normal-mode cursor sits on a character, or column 0 for an empty line. */

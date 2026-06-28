@@ -1,3 +1,17 @@
+/** Supported cursor motions understood by the current Vim editor mixin. */
+export type VimMotion =
+  | "left"
+  | "down"
+  | "up"
+  | "right"
+  | "lineStart"
+  | "lineEnd"
+  | "firstNonBlank"
+  | "nextWord"
+  | "previousWord"
+  | "endOfWord";
+
+/** Supported delete shapes understood by the current Vim editor mixin. */
 export type VimDeleteTarget =
   | "charUnderCursor"
   | "charBeforeCursor"
@@ -14,16 +28,7 @@ export type VimRange =
   | { type: "linewise"; startLine: number; endLine: number };
 
 export interface VimEditorApi {
-  moveCursorLeft(): void;
-  moveCursorDown(): void;
-  moveCursorUp(): void;
-  moveCursorRight(): void;
-  moveCursorToLineStart(): void;
-  moveCursorToLineEnd(): void;
-  moveCursorToFirstNonBlank(): void;
-  moveCursorToNextWord(): void;
-  moveCursorToPreviousWord(): void;
-  moveCursorToEndOfWord(): void;
+  move(motion: VimMotion): void;
   insertLineBelow(): void;
   insertLineAbove(): void;
   placeCaretAtLineStart(): void;

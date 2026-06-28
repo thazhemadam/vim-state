@@ -1,7 +1,7 @@
 import { assign, setup, type SnapshotFrom } from "xstate";
 
 import { type VimContext, type VimInput, type VimOperator } from "./context.js";
-import type { VimDeleteTarget } from "./editor.js";
+import type { VimDeleteTarget, VimMotion } from "./editor.js";
 import type { VimEvent } from "./events.js";
 import { initialVimMode } from "./state.js";
 
@@ -22,26 +22,8 @@ export const vimMachine = setup({
     placeCaretAfterCursor: ({ context }) =>
       context.editor.placeCaretAfterCursor(),
     placeCaretAtLineEnd: ({ context }) => context.editor.placeCaretAtLineEnd(),
-    moveCursorLeft: ({ context }) =>
-      repeat(context, () => context.editor.moveCursorLeft()),
-    moveCursorDown: ({ context }) =>
-      repeat(context, () => context.editor.moveCursorDown()),
-    moveCursorUp: ({ context }) =>
-      repeat(context, () => context.editor.moveCursorUp()),
-    moveCursorRight: ({ context }) =>
-      repeat(context, () => context.editor.moveCursorRight()),
-    moveCursorToLineStart: ({ context }) =>
-      context.editor.moveCursorToLineStart(),
-    moveCursorToLineEnd: ({ context }) =>
-      repeat(context, () => context.editor.moveCursorToLineEnd()),
-    moveCursorToFirstNonBlank: ({ context }) =>
-      repeat(context, () => context.editor.moveCursorToFirstNonBlank()),
-    moveCursorToNextWord: ({ context }) =>
-      repeat(context, () => context.editor.moveCursorToNextWord()),
-    moveCursorToPreviousWord: ({ context }) =>
-      repeat(context, () => context.editor.moveCursorToPreviousWord()),
-    moveCursorToEndOfWord: ({ context }) =>
-      repeat(context, () => context.editor.moveCursorToEndOfWord()),
+    move: ({ context }, params: { motion: VimMotion }) =>
+      repeat(context, () => context.editor.move(params.motion)),
     insertLineBelow: ({ context }) => context.editor.insertLineBelow(),
     insertLineAbove: ({ context }) => context.editor.insertLineAbove(),
     placeCaretAtLineStart: ({ context }) =>
@@ -79,7 +61,7 @@ export const vimMachine = setup({
         KEY: {
           guard: { type: "keyIs", params: { key: "escape" } },
           target: "normal",
-          actions: { type: "moveCursorLeft" },
+          actions: { type: "move", params: { motion: "left" } },
         },
       },
     },
@@ -89,7 +71,7 @@ export const vimMachine = setup({
           {
             guard: { type: "keyIs", params: { key: "escape" } },
             target: "normal",
-            actions: { type: "moveCursorLeft" },
+            actions: { type: "move", params: { motion: "left" } },
           },
           {
             guard: { type: "keyIsPrintable" },
@@ -201,7 +183,7 @@ export const vimMachine = setup({
             guard: { type: "keyIs", params: { key: "I" } },
             target: "insert",
             actions: [
-              { type: "moveCursorToFirstNonBlank" },
+              { type: "move", params: { motion: "firstNonBlank" } },
               { type: "clearCount" },
             ],
           },
@@ -240,60 +222,78 @@ export const vimMachine = setup({
           },
           {
             guard: { type: "keyIs", params: { key: "h" } },
-            actions: [{ type: "moveCursorLeft" }, { type: "clearCount" }],
+            actions: [
+              { type: "move", params: { motion: "left" } },
+              { type: "clearCount" },
+            ],
           },
           {
             guard: { type: "keyIs", params: { key: "j" } },
-            actions: [{ type: "moveCursorDown" }, { type: "clearCount" }],
+            actions: [
+              { type: "move", params: { motion: "down" } },
+              { type: "clearCount" },
+            ],
           },
           {
             guard: { type: "keyIs", params: { key: "k" } },
-            actions: [{ type: "moveCursorUp" }, { type: "clearCount" }],
+            actions: [
+              { type: "move", params: { motion: "up" } },
+              { type: "clearCount" },
+            ],
           },
           {
             guard: { type: "keyIs", params: { key: "l" } },
-            actions: [{ type: "moveCursorRight" }, { type: "clearCount" }],
+            actions: [
+              { type: "move", params: { motion: "right" } },
+              { type: "clearCount" },
+            ],
           },
           {
             guard: { type: "keyIs", params: { key: "0" } },
             actions: [
-              { type: "moveCursorToLineStart" },
+              { type: "move", params: { motion: "lineStart" } },
               { type: "clearCount" },
             ],
           },
           {
             guard: { type: "keyIs", params: { key: "$" } },
-            actions: [{ type: "moveCursorToLineEnd" }, { type: "clearCount" }],
+            actions: [
+              { type: "move", params: { motion: "lineEnd" } },
+              { type: "clearCount" },
+            ],
           },
           {
             guard: { type: "keyIs", params: { key: "^" } },
             actions: [
-              { type: "moveCursorToFirstNonBlank" },
+              { type: "move", params: { motion: "firstNonBlank" } },
               { type: "clearCount" },
             ],
           },
           {
             guard: { type: "keyIs", params: { key: "_" } },
             actions: [
-              { type: "moveCursorToFirstNonBlank" },
+              { type: "move", params: { motion: "firstNonBlank" } },
               { type: "clearCount" },
             ],
           },
           {
             guard: { type: "keyIs", params: { key: "w" } },
-            actions: [{ type: "moveCursorToNextWord" }, { type: "clearCount" }],
+            actions: [
+              { type: "move", params: { motion: "nextWord" } },
+              { type: "clearCount" },
+            ],
           },
           {
             guard: { type: "keyIs", params: { key: "b" } },
             actions: [
-              { type: "moveCursorToPreviousWord" },
+              { type: "move", params: { motion: "previousWord" } },
               { type: "clearCount" },
             ],
           },
           {
             guard: { type: "keyIs", params: { key: "e" } },
             actions: [
-              { type: "moveCursorToEndOfWord" },
+              { type: "move", params: { motion: "endOfWord" } },
               { type: "clearCount" },
             ],
           },
