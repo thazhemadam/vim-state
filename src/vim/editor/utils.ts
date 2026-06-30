@@ -248,7 +248,7 @@ export function nounForKey(
 }
 
 /** Return the same character with letter case flipped; non-letters are unchanged. */
-export function toggledCase(char: string): string {
+export function toggleCase(char: string): string {
   const lower = char.toLocaleLowerCase();
   const upper = char.toLocaleUpperCase();
   return char === lower && lower !== upper ? upper : lower;

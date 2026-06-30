@@ -31,7 +31,7 @@ import type {
   VimRegister,
   VimVisualSelection,
 } from "./types.js";
-import { firstNonBlankColumn, normalMaxColumn, toggledCase } from "./utils.js";
+import { firstNonBlankColumn, normalMaxColumn, toggleCase } from "./utils.js";
 
 export type {
   VimEditorApi,
@@ -216,7 +216,7 @@ class VimEditorCore implements VimEditorApi {
       }
 
       this.deleteForward(1);
-      this.host.sendInputToEditor(toggledCase(char));
+      this.host.sendInputToEditor(toggleCase(char));
     }
     this.clampCursorColumn();
   }
