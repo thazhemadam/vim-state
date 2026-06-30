@@ -1293,7 +1293,7 @@ test("VimPiEditor renders operator-pending mode label", () => {
   assert.match(editor.render(40).at(-1) ?? "", /-- OPERATOR --$/);
 });
 
-test("VimPiEditor uses hardware cursors for insert and operator-pending", () => {
+test("VimPiEditor uses hardware cursors for insert, replace, and operator-pending", () => {
   const writes: string[] = [];
   const editor = createEditor(writes);
 
@@ -1308,12 +1308,50 @@ test("VimPiEditor uses hardware cursors for insert and operator-pending", () => 
   assert.deepEqual(writes, ["\x1b[6 q", "\x1b[2 q"]);
   assert.match(editor.render(40).join("\n"), /\x1b\[7mc\x1b\[0m/);
 
-  editor.handleInput("d");
+  editor.handleInput("R");
   assert.deepEqual(writes, ["\x1b[6 q", "\x1b[2 q", "\x1b[4 q"]);
+  editor.handleInput(ESC);
+  assert.deepEqual(writes, ["\x1b[6 q", "\x1b[2 q", "\x1b[4 q", "\x1b[2 q"]);
+  editor.handleInput("r");
+  assert.deepEqual(writes, [
+    "\x1b[6 q",
+    "\x1b[2 q",
+    "\x1b[4 q",
+    "\x1b[2 q",
+    "\x1b[4 q",
+  ]);
+  editor.handleInput(ESC);
+  assert.deepEqual(writes, [
+    "\x1b[6 q",
+    "\x1b[2 q",
+    "\x1b[4 q",
+    "\x1b[2 q",
+    "\x1b[4 q",
+    "\x1b[2 q",
+  ]);
+
+  editor.handleInput("d");
+  assert.deepEqual(writes, [
+    "\x1b[6 q",
+    "\x1b[2 q",
+    "\x1b[4 q",
+    "\x1b[2 q",
+    "\x1b[4 q",
+    "\x1b[2 q",
+    "\x1b[4 q",
+  ]);
   assert.doesNotMatch(editor.render(40).join("\n"), /\x1b\[7m/);
 
   editor.handleInput("f");
-  assert.deepEqual(writes, ["\x1b[6 q", "\x1b[2 q", "\x1b[4 q"]);
+  assert.deepEqual(writes, [
+    "\x1b[6 q",
+    "\x1b[2 q",
+    "\x1b[4 q",
+    "\x1b[2 q",
+    "\x1b[4 q",
+    "\x1b[2 q",
+    "\x1b[4 q",
+  ]);
   assert.match(editor.render(40).at(-1) ?? "", /-- OPERATOR --$/);
 });
 

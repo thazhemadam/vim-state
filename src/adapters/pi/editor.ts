@@ -150,7 +150,11 @@ const CURSOR_SHAPE: Record<VimCursorStyle, string> = {
 
 /** Return the hardware cursor shape for the current Vim machine snapshot. */
 function vimCursorStyle(snapshot: VimSnapshot): VimCursorStyle {
-  if (isVimOperatorMode(snapshot)) {
+  if (
+    isVimOperatorMode(snapshot) ||
+    snapshot.value === "replace" ||
+    snapshot.value === "replace-once"
+  ) {
     return "underline";
   }
   return getVimMode(snapshot) === "insert" ? "bar" : "block";
