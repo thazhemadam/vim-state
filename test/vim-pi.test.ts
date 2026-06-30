@@ -343,6 +343,18 @@ test("VimPiEditor applies Normal-mode count edge cases", () => {
   }
 });
 
+test("VimPiEditor maps Normal u to Pi's default undo binding", () => {
+  const editor = createEditorWithText("abc");
+
+  play(editor, [ESC, "0", "x", "u"]);
+
+  assertEditor(editor, {
+    text: "abc",
+    cursor: { line: 0, col: 0 },
+    mode: "normal",
+  });
+});
+
 test("VimPiEditor applies delete operator motions", () => {
   for (const spec of [
     {

@@ -57,6 +57,10 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
     return this.vim.getSnapshot();
   }
 
+  undoEditor(): void {
+    super.handleInput("\x1f"); // Ctrl--, Pi's default undo binding.
+  }
+
   handleInput(data: string): void {
     const previousMode = getVimMode(this.vimSnapshot);
     this.vim.send(piInputToVimEvent(data));
