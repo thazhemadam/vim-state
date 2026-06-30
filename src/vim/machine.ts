@@ -2,6 +2,7 @@ import { assign, setup, type SnapshotFrom } from "xstate";
 
 import { type VimContext, type VimInput } from "./context.js";
 import type {
+  VimCaseTransform,
   VimFindDirection,
   VimFindOperation,
   VimLineTarget,
@@ -107,6 +108,10 @@ export const vimMachine = setup({
     },
     replaceCharUnderCursor: ({ context }, params: { char: string }) =>
       context.editor.replaceCharUnderCursor(params.char),
+    transformCase: (
+      { context },
+      params: { target: VimOperatorTarget; transform: VimCaseTransform },
+    ) => context.editor.transformCase(params.target, params.transform),
     toggleCase: ({ context }) => context.editor.toggleCase(context.count ?? 1),
   },
   guards: {
@@ -693,6 +698,51 @@ export const vimMachine = setup({
             ],
           },
           {
+            guard: { type: "keyIs", params: { key: "~" } },
+            target: "normal",
+            actions: [
+              {
+                type: "transformCase",
+                params: ({ context }) => ({
+                  target: context.visual!,
+                  transform: "toggle" as const,
+                }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "u" } },
+            target: "normal",
+            actions: [
+              {
+                type: "transformCase",
+                params: ({ context }) => ({
+                  target: context.visual!,
+                  transform: "lower" as const,
+                }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "U" } },
+            target: "normal",
+            actions: [
+              {
+                type: "transformCase",
+                params: ({ context }) => ({
+                  target: context.visual!,
+                  transform: "upper" as const,
+                }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
             guard: { type: "keyIs", params: { key: "G" } },
             actions: [
               { type: "goToLine", params: { line: "last" } },
@@ -789,6 +839,51 @@ export const vimMachine = setup({
               {
                 type: "replace",
                 params: ({ context }) => ({ target: context.visual! }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "~" } },
+            target: "normal",
+            actions: [
+              {
+                type: "transformCase",
+                params: ({ context }) => ({
+                  target: context.visual!,
+                  transform: "toggle" as const,
+                }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "u" } },
+            target: "normal",
+            actions: [
+              {
+                type: "transformCase",
+                params: ({ context }) => ({
+                  target: context.visual!,
+                  transform: "lower" as const,
+                }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "U" } },
+            target: "normal",
+            actions: [
+              {
+                type: "transformCase",
+                params: ({ context }) => ({
+                  target: context.visual!,
+                  transform: "upper" as const,
+                }),
               },
               { type: "clearVisual" },
               { type: "clearCount" },

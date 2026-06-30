@@ -18,6 +18,7 @@ import {
 } from "./operators.js";
 import type {
   Constructor,
+  VimCaseTransform,
   VimEditorApi,
   VimEditorHost,
   VimFindDirection,
@@ -34,6 +35,7 @@ import type {
 import { firstNonBlankColumn, normalMaxColumn, toggleCase } from "./utils.js";
 
 export type {
+  VimCaseTransform,
   VimEditorApi,
   VimEditorHost,
   VimFindDirection,
@@ -177,6 +179,44 @@ class VimEditorCore implements VimEditorApi {
     });
   }
 
+  /** Normal `~`: toggle characters under the cursor, then advance like Vim. */
+  toggleCase(count = 1): void {
+    for (let i = 0; i < Math.max(count, 1); ++i) {
+      const char = this.currentLine[this.cursor.col];
+      if (!char) {
+        return;
+      }
+
+      this.deleteForward(1);
+      this.host.sendInputToEditor(toggleCase(char));
+    }
+    this.clampCursorColumn();
+  }
+
+  /** Visual `~`/`u`/`U`: transform a range, then return to the selection start. */
+  transformCase(target: VimOperatorTarget, transform: VimCaseTransform): void {
+    const range = this.resolveOperatorRange(target);
+    if (!range) {
+      return;
+    }
+
+    const charRange =
+      range.type === "charwise"
+        ? range
+        : {
+            type: "charwise" as const,
+            start: { line: range.startLine, col: 0 },
+            end: {
+              line: range.endLine,
+              col: this.lines[range.endLine]?.length ?? 0,
+            },
+          };
+    const text = this.registerForRange(charRange).text;
+    this.applyDeleteRange(charRange);
+    this.insertText(transformCaseText(text, transform));
+    this.moveCursorToPosition(charRange.start);
+  }
+
   /** Put unnamed-register text before/after the cursor, or above/below the current line. */
   put(register: VimRegister, placement: "before" | "after"): void {
     if (register.type === "linewise") {
@@ -205,20 +245,6 @@ class VimEditorCore implements VimEditorApi {
     }
 
     this.replace("right", { text: char, type: "charwise" });
-  }
-
-  /** Toggle character case under the cursor and advance right, clamping at line end. */
-  toggleCase(count = 1): void {
-    for (let i = 0; i < Math.max(count, 1); ++i) {
-      const char = this.currentLine[this.cursor.col];
-      if (!char) {
-        return;
-      }
-
-      this.deleteForward(1);
-      this.host.sendInputToEditor(toggleCase(char));
-    }
-    this.clampCursorColumn();
   }
 
   /** Move left until the Normal-mode cursor sits on a character, or column 0 for an empty line. */
@@ -657,6 +683,18 @@ function isVisualSelection(
   target: VimOperatorTarget,
 ): target is VimVisualSelection {
   return typeof target === "object" && "mode" in target && "anchor" in target;
+}
+
+/** Apply the requested case transform to plain text. */
+function transformCaseText(text: string, transform: VimCaseTransform): string {
+  switch (transform) {
+    case "toggle":
+      return Array.from(text, toggleCase).join("");
+    case "lower":
+      return text.toLocaleLowerCase();
+    case "upper":
+      return text.toLocaleUpperCase();
+  }
 }
 
 export function VimEditor<TBase extends Constructor<VimEditorHost>>(

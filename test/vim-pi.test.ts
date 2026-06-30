@@ -995,6 +995,33 @@ test("VimPiEditor replaces Visual selections with the unnamed register", () => {
   }
 });
 
+test("VimPiEditor changes case in Visual selections", () => {
+  for (const spec of [
+    { key: "~", text: "aBc dEf", name: "~ toggles selected chars" },
+    { key: "u", text: "abc dEf", name: "u lowercases selected chars" },
+    { key: "U", text: "ABC dEf", name: "U uppercases selected chars" },
+  ]) {
+    const editor = createEditorWithText("AbC dEf");
+    play(editor, [ESC, "0", "y", "w", "0", "v", "l", "l", spec.key]);
+    assertEditor(
+      editor,
+      { text: spec.text, cursor: { line: 0, col: 0 }, mode: "normal" },
+      spec.name,
+    );
+    assertRegister(editor, { text: "AbC ", type: "charwise" }, spec.name);
+    assert.equal(editor.vimSnapshot.context.visual, undefined, spec.name);
+  }
+
+  const linewise = createEditorWithText("AbC\ndEf\nghi");
+  play(linewise, [ESC, "g", "g", "y", "w", "0", "V", "j", "U"]);
+  assertEditor(linewise, {
+    text: "ABC\nDEF\nghi",
+    cursor: { line: 0, col: 0 },
+    mode: "normal",
+  });
+  assertRegister(linewise, { text: "AbC\n", type: "charwise" });
+});
+
 test("VimPiEditor exits Visual mode without changing the buffer", () => {
   const editor = createEditorWithText("abcdef");
   play(editor, [ESC, "0", "v", "l"]);

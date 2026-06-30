@@ -59,6 +59,8 @@ export type VimNoun = VimMotion | VimFindTarget | "line";
 
 export type VimOperatorTarget = VimNoun | VimVisualSelection;
 
+export type VimCaseTransform = "toggle" | "lower" | "upper";
+
 /**
  * Minimal internal operator range model.
  *
@@ -99,6 +101,7 @@ export interface VimEditorApi extends Pick<VimEditorHost, "getCursor"> {
     target: VimOperatorTarget,
     replacement: VimRegister,
   ): VimRegister | undefined;
+  transformCase(target: VimOperatorTarget, transform: VimCaseTransform): void;
   put(register: VimRegister, placement: "before" | "after"): void;
   replaceCharUnderCursor(char: string): void;
   toggleCase(count?: number): void;
