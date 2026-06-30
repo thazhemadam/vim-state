@@ -95,6 +95,10 @@ export interface VimEditorApi extends Pick<VimEditorHost, "getCursor"> {
   delete(target: VimOperatorTarget, count?: number): VimRegister | undefined;
   change(target: VimOperatorTarget, count?: number): VimRegister | undefined;
   yank(target: VimOperatorTarget, count?: number): VimRegister | undefined;
+  replace(
+    target: VimOperatorTarget,
+    replacement: VimRegister,
+  ): VimRegister | undefined;
   put(register: VimRegister, placement: "before" | "after"): void;
   replaceCharUnderCursor(char: string): void;
   toggleCase(count?: number): void;

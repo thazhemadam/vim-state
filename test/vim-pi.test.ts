@@ -978,6 +978,23 @@ test("VimPiEditor applies Visual-mode selections", () => {
   }
 });
 
+test("VimPiEditor replaces Visual selections with the unnamed register", () => {
+  for (const spec of [
+    { key: "p", name: "p replaces charwise selection" },
+    { key: "P", name: "P replaces charwise selection" },
+  ]) {
+    const editor = createEditorWithText("cat dog");
+    play(editor, [ESC, "0", "y", "w", "w", "v", "l", "l", spec.key]);
+    assertEditor(
+      editor,
+      { text: "cat cat ", cursor: { line: 0, col: 7 }, mode: "normal" },
+      spec.name,
+    );
+    assertRegister(editor, { text: "dog", type: "charwise" }, spec.name);
+    assert.equal(editor.vimSnapshot.context.visual, undefined, spec.name);
+  }
+});
+
 test("VimPiEditor exits Visual mode without changing the buffer", () => {
   const editor = createEditorWithText("abcdef");
   play(editor, [ESC, "0", "v", "l"]);
@@ -1101,6 +1118,15 @@ test("VimPiEditor applies replace commands", () => {
     cursor: { line: 0, col: 1 },
     mode: "normal",
   });
+
+  const registerEditor = createEditorWithText("abc def");
+  play(registerEditor, [ESC, "0", "y", "w", "w", "r", "X"]);
+  assertEditor(registerEditor, {
+    text: "abc Xef",
+    cursor: { line: 0, col: 4 },
+    mode: "normal",
+  });
+  assertRegister(registerEditor, { text: "abc ", type: "charwise" });
 });
 
 test("VimPiEditor applies Normal-mode character deletion", () => {

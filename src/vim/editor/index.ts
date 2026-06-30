@@ -160,6 +160,23 @@ class VimEditorCore implements VimEditorApi {
     );
   }
 
+  /** Replace a resolved target with register text and return the replaced text. */
+  replace(
+    target: VimOperatorTarget,
+    replacement: VimRegister,
+  ): VimRegister | undefined {
+    return this.applyOperator(target, 1, (range) => {
+      const replaced = this.applyDeleteRange(range);
+      this.insertText(replacement.text);
+      if (replacement.type === "charwise") {
+        this.move("left");
+      } else {
+        this.clampCursorColumn();
+      }
+      return replaced;
+    });
+  }
+
   /** Put unnamed-register text before/after the cursor, or above/below the current line. */
   put(register: VimRegister, placement: "before" | "after"): void {
     if (register.type === "linewise") {
@@ -187,9 +204,7 @@ class VimEditorCore implements VimEditorApi {
       return;
     }
 
-    this.delete("right");
-    this.host.sendInputToEditor(char);
-    this.move("left");
+    this.replace("right", { text: char, type: "charwise" });
   }
 
   /** Toggle character case under the cursor and advance right, clamping at line end. */

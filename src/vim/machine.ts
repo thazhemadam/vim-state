@@ -91,6 +91,13 @@ export const vimMachine = setup({
         context.editor.yank(params.target, context.count ?? 1) ??
         context.register,
     }),
+    replace: assign({
+      register: ({ context }, params: { target: VimOperatorTarget }) =>
+        context.register
+          ? (context.editor.replace(params.target, context.register) ??
+            context.register)
+          : context.register,
+    }),
     put: ({ context }, params: { placement: "before" | "after" }) => {
       const register = context.register;
       if (!register) {
@@ -662,6 +669,30 @@ export const vimMachine = setup({
             ],
           },
           {
+            guard: { type: "keyIs", params: { key: "p" } },
+            target: "normal",
+            actions: [
+              {
+                type: "replace",
+                params: ({ context }) => ({ target: context.visual! }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "P" } },
+            target: "normal",
+            actions: [
+              {
+                type: "replace",
+                params: ({ context }) => ({ target: context.visual! }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
             guard: { type: "keyIs", params: { key: "G" } },
             actions: [
               { type: "goToLine", params: { line: "last" } },
@@ -733,6 +764,30 @@ export const vimMachine = setup({
             actions: [
               {
                 type: "change",
+                params: ({ context }) => ({ target: context.visual! }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "p" } },
+            target: "normal",
+            actions: [
+              {
+                type: "replace",
+                params: ({ context }) => ({ target: context.visual! }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "P" } },
+            target: "normal",
+            actions: [
+              {
+                type: "replace",
                 params: ({ context }) => ({ target: context.visual! }),
               },
               { type: "clearVisual" },
