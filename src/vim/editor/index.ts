@@ -25,10 +25,11 @@ import type {
   VimLineTarget,
   VimMotion,
   VimMotionResult,
-  VimNoun,
+  VimOperatorTarget,
   VimPosition,
   VimRange,
   VimRegister,
+  VimVisualSelection,
 } from "./types.js";
 import { firstNonBlankColumn, normalMaxColumn, toggledCase } from "./utils.js";
 
@@ -41,7 +42,10 @@ export type {
   VimMotion,
   VimNoun,
   VimOperator,
+  VimOperatorTarget,
   VimRegister,
+  VimVisualMode,
+  VimVisualSelection,
 } from "./types.js";
 
 export { nounForKey } from "./utils.js";
@@ -49,6 +53,10 @@ export { nounForKey } from "./utils.js";
 /** Reusable Vim operations composed around a host editor. */
 class VimEditorCore implements VimEditorApi {
   constructor(private readonly host: VimEditorHost) {}
+
+  getCursor(): VimPosition {
+    return this.cursor;
+  }
 
   /** Apply a supported Normal-mode cursor motion. */
   move(motion: VimMotion): void {
@@ -131,22 +139,22 @@ class VimEditorCore implements VimEditorApi {
    * Operator nouns include real motions (`dw`) plus linewise nouns from doubled
    * operators (`dd`), so range resolution is separate from cursor movement.
    */
-  delete(noun: VimNoun, count = 1): VimRegister | undefined {
-    return this.applyOperator(noun, count, (range) =>
+  delete(target: VimOperatorTarget, count = 1): VimRegister | undefined {
+    return this.applyOperator(target, count, (range) =>
       this.applyDeleteRange(range),
     );
   }
 
   /** Apply a supported operator noun as a change and return the changed text. */
-  change(noun: VimNoun, count = 1): VimRegister | undefined {
-    return this.applyOperator(noun, count, (range) =>
+  change(target: VimOperatorTarget, count = 1): VimRegister | undefined {
+    return this.applyOperator(target, count, (range) =>
       this.applyChangeRange(range),
     );
   }
 
   /** Store a supported operator noun in the unnamed register. */
-  yank(noun: VimNoun, count = 1): VimRegister | undefined {
-    return this.applyOperator(noun, count, (range) =>
+  yank(target: VimOperatorTarget, count = 1): VimRegister | undefined {
+    return this.applyOperator(target, count, (range) =>
       this.registerForRange(range),
     );
   }
@@ -390,7 +398,15 @@ class VimEditorCore implements VimEditorApi {
    * Motions reuse their motion range. `line` is not a cursor motion; it names the
    * current-line range for doubled operators such as `dd` and `cc`.
    */
-  private resolveOperatorRange(noun: VimNoun, count = 1): VimRange | undefined {
+  private resolveOperatorRange(
+    target: VimOperatorTarget,
+    count = 1,
+  ): VimRange | undefined {
+    if (isVisualSelection(target)) {
+      return this.resolveVisualRange(target);
+    }
+
+    const noun = target;
     if (noun === "line") {
       const start = this.cursor;
       return {
@@ -415,19 +431,51 @@ class VimEditorCore implements VimEditorApi {
     return this.resolveMotion(noun, count)?.range;
   }
 
+  private resolveVisualRange(selection: VimVisualSelection): VimRange {
+    const active = this.cursor;
+    if (selection.mode === "linewise") {
+      return {
+        type: "linewise",
+        startLine: Math.min(selection.anchor.line, active.line),
+        endLine: Math.max(selection.anchor.line, active.line),
+      };
+    }
+
+    const anchorEnd = {
+      line: selection.anchor.line,
+      col: Math.min(
+        selection.anchor.col + 1,
+        this.lines[selection.anchor.line]?.length ?? 0,
+      ),
+    };
+    const activeEnd = {
+      line: active.line,
+      col: Math.min(active.col + 1, this.lines[active.line]?.length ?? 0),
+    };
+
+    if (
+      selection.anchor.line < active.line ||
+      (selection.anchor.line === active.line &&
+        selection.anchor.col <= active.col)
+    ) {
+      return { type: "charwise", start: selection.anchor, end: activeEnd };
+    }
+    return { type: "charwise", start: active, end: anchorEnd };
+  }
+
   /** Resolve a counted operator noun once, then apply the resulting range once. */
   private applyOperator(
-    noun: VimNoun,
+    target: VimOperatorTarget,
     count: number,
     applyRange: (range: VimRange) => VimRegister,
   ): VimRegister | undefined {
-    const range = this.resolveOperatorRange(noun, count);
+    const range = this.resolveOperatorRange(target, count);
     if (!range) {
       return undefined;
     }
 
     const register = applyRange(range);
-    if (noun !== "left") {
+    if (target !== "left") {
       this.clampCursorColumn();
     }
     return register;
@@ -587,6 +635,12 @@ class VimEditorCore implements VimEditorApi {
   private registerForRange(range: VimRange): VimRegister {
     return registerForRange(this.lines, range);
   }
+}
+
+function isVisualSelection(
+  target: VimOperatorTarget,
+): target is VimVisualSelection {
+  return typeof target === "object" && "mode" in target && "anchor" in target;
 }
 
 export function VimEditor<TBase extends Constructor<VimEditorHost>>(

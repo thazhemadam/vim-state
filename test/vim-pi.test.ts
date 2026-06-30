@@ -5,7 +5,7 @@ import vimPiExtension, { VimPiEditor } from "../src/index.js";
 import { matchesKey } from "@earendil-works/pi-tui";
 
 import { normalizePiKey } from "../src/adapters/pi/keymap.js";
-import { getVimMode } from "../src/vim/selectors.js";
+import { getVimMode, getVimModeLabel } from "../src/vim/selectors.js";
 
 const ESC = "\x1b";
 
@@ -916,6 +916,91 @@ test("VimPiEditor cancels a pending change operator", () => {
     cursor: { line: 0, col: 4 },
     mode: "normal",
   });
+});
+
+test("VimPiEditor applies Visual-mode selections", () => {
+  for (const spec of [
+    {
+      name: "v y yanks the selected chars",
+      text: "abcdef",
+      keys: [ESC, "0", "v", "l", "l", "y"],
+      textAfter: "abcdef",
+      cursor: { line: 0, col: 2 },
+      register: { text: "abc", type: "charwise" as const },
+      mode: "normal" as const,
+    },
+    {
+      name: "v d deletes the selected chars",
+      text: "abcdef",
+      keys: [ESC, "0", "v", "l", "l", "d"],
+      textAfter: "def",
+      cursor: { line: 0, col: 0 },
+      register: { text: "abc", type: "charwise" as const },
+      mode: "normal" as const,
+    },
+    {
+      name: "v x deletes the selected chars",
+      text: "abcdef",
+      keys: [ESC, "0", "v", "l", "l", "x"],
+      textAfter: "def",
+      cursor: { line: 0, col: 0 },
+      register: { text: "abc", type: "charwise" as const },
+      mode: "normal" as const,
+    },
+    {
+      name: "v c changes the selected chars",
+      text: "abcdef",
+      keys: [ESC, "0", "v", "l", "l", "c"],
+      textAfter: "def",
+      cursor: { line: 0, col: 0 },
+      register: { text: "abc", type: "charwise" as const },
+      mode: "insert" as const,
+    },
+    {
+      name: "V y yanks whole selected lines",
+      text: "one\ntwo\nthree",
+      keys: [ESC, "g", "g", "V", "j", "y"],
+      textAfter: "one\ntwo\nthree",
+      cursor: { line: 1, col: 0 },
+      register: { text: "one\ntwo\n", type: "linewise" as const },
+      mode: "normal" as const,
+    },
+  ]) {
+    const editor = createEditorWithText(spec.text);
+    play(editor, spec.keys);
+    assertEditor(
+      editor,
+      { text: spec.textAfter, cursor: spec.cursor, mode: spec.mode },
+      spec.name,
+    );
+    assertRegister(editor, spec.register, spec.name);
+    assert.equal(editor.vimSnapshot.context.visual, undefined, spec.name);
+  }
+});
+
+test("VimPiEditor exits Visual mode without changing the buffer", () => {
+  const editor = createEditorWithText("abcdef");
+  play(editor, [ESC, "0", "v", "l"]);
+  assert.equal(getVimModeLabel(editor.vimSnapshot), "-- VISUAL --");
+
+  editor.handleInput(ESC);
+  assertEditor(editor, {
+    text: "abcdef",
+    cursor: { line: 0, col: 1 },
+    mode: "normal",
+  });
+  assert.equal(editor.vimSnapshot.context.register, undefined);
+  assert.equal(editor.vimSnapshot.context.visual, undefined);
+});
+
+test("VimPiEditor renders Visual mode labels", () => {
+  const editor = createEditorWithText("one\ntwo");
+  play(editor, [ESC, "g", "g", "v"]);
+  assert.match(editor.render(40).at(-1) ?? "", /-- VISUAL --$/);
+
+  editor.handleInput(ESC);
+  editor.handleInput("V");
+  assert.match(editor.render(40).at(-1) ?? "", /-- VISUAL LINE --$/);
 });
 
 test("VimPiEditor applies Normal-mode insert-entry commands", () => {

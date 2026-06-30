@@ -43,11 +43,21 @@ export type VimRegister = {
   type: "charwise" | "linewise";
 };
 
+/** Zero-based editor position. `col` is a UTF-16/string column for now. */
+export type VimPosition = { line: number; col: number };
+
+export type VimVisualMode = "charwise" | "linewise";
+
+/** Visual selection anchor; the active end is the editor cursor. */
+export type VimVisualSelection = {
+  mode: VimVisualMode;
+  anchor: VimPosition;
+};
+
 /** Motion or operator-range noun an operator can act on (`line` backs doubled operators like `dd`). */
 export type VimNoun = VimMotion | VimFindTarget | "line";
 
-/** Zero-based editor position. `col` is a UTF-16/string column for now. */
-export type VimPosition = { line: number; col: number };
+export type VimOperatorTarget = VimNoun | VimVisualSelection;
 
 /**
  * Minimal internal operator range model.
@@ -67,7 +77,7 @@ export type VimMotionResult = {
 };
 
 /** Semantic editor operations the Vim state machine can request. */
-export interface VimEditorApi {
+export interface VimEditorApi extends Pick<VimEditorHost, "getCursor"> {
   move(motion: VimMotion): void;
   insertLineBelow(): void;
   insertLineAbove(): void;
@@ -82,9 +92,9 @@ export interface VimEditorApi {
   placeCaretAtLineStart(): void;
   placeCaretAfterCursor(): void;
   placeCaretAtLineEnd(): void;
-  delete(noun: VimNoun, count?: number): VimRegister | undefined;
-  change(noun: VimNoun, count?: number): VimRegister | undefined;
-  yank(noun: VimNoun, count?: number): VimRegister | undefined;
+  delete(target: VimOperatorTarget, count?: number): VimRegister | undefined;
+  change(target: VimOperatorTarget, count?: number): VimRegister | undefined;
+  yank(target: VimOperatorTarget, count?: number): VimRegister | undefined;
   put(register: VimRegister, placement: "before" | "after"): void;
   replaceCharUnderCursor(char: string): void;
   toggleCase(count?: number): void;

@@ -6,6 +6,8 @@ export type VimModeLabel =
   | "-- INSERT --"
   | "-- NORMAL --"
   | "-- OPERATOR --"
+  | "-- VISUAL --"
+  | "-- VISUAL LINE --"
   | "-- REPLACE --";
 
 export function getVimMode(snapshot: VimSnapshot): VimMode {
@@ -23,6 +25,8 @@ export function getVimMode(snapshot: VimSnapshot): VimMode {
     case "operator-till-forward":
     case "operator-till-backward":
     case "operator-pending":
+    case "visual-char":
+    case "visual-line":
     case "replace-once":
       return "normal";
     case "replace":
@@ -44,10 +48,20 @@ export function isVimOperatorMode(snapshot: VimSnapshot): boolean {
   );
 }
 
+export function isVimVisualMode(snapshot: VimSnapshot): boolean {
+  return snapshot.value === "visual-char" || snapshot.value === "visual-line";
+}
+
 /** Return the user-visible mode label, including parser substates worth showing. */
 export function getVimModeLabel(snapshot: VimSnapshot): VimModeLabel {
   if (isVimOperatorMode(snapshot)) {
     return "-- OPERATOR --";
+  }
+  if (snapshot.value === "visual-char") {
+    return "-- VISUAL --";
+  }
+  if (snapshot.value === "visual-line") {
+    return "-- VISUAL LINE --";
   }
 
   switch (getVimMode(snapshot)) {

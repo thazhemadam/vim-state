@@ -8,7 +8,9 @@ import type {
   VimMotion,
   VimNoun,
   VimOperator,
+  VimOperatorTarget,
   VimRegister,
+  VimVisualMode,
 } from "./editor.js";
 import { nounForKey } from "./editor.js";
 import type { VimEvent } from "./events.js";
@@ -34,6 +36,13 @@ export const vimMachine = setup({
       count: undefined,
     }),
     clearOperator: assign({ operator: undefined }),
+    startVisual: assign({
+      visual: ({ context }, params: { mode: VimVisualMode }) => ({
+        mode: params.mode,
+        anchor: context.editor.getCursor(),
+      }),
+    }),
+    clearVisual: assign({ visual: undefined }),
     placeCaretAfterCursor: ({ context }) =>
       context.editor.placeCaretAfterCursor(),
     placeCaretAtLineEnd: ({ context }) => context.editor.placeCaretAtLineEnd(),
@@ -68,13 +77,18 @@ export const vimMachine = setup({
     placeCaretAtLineStart: ({ context }) =>
       context.editor.placeCaretAtLineStart(),
     delete: assign({
-      register: ({ context }, params: { noun: VimNoun }) =>
-        context.editor.delete(params.noun, context.count ?? 1) ??
+      register: ({ context }, params: { target: VimOperatorTarget }) =>
+        context.editor.delete(params.target, context.count ?? 1) ??
         context.register,
     }),
     change: assign({
-      register: ({ context }, params: { noun: VimNoun }) =>
-        context.editor.change(params.noun, context.count ?? 1) ??
+      register: ({ context }, params: { target: VimOperatorTarget }) =>
+        context.editor.change(params.target, context.count ?? 1) ??
+        context.register,
+    }),
+    yank: assign({
+      register: ({ context }, params: { target: VimOperatorTarget }) =>
+        context.editor.yank(params.target, context.count ?? 1) ??
         context.register,
     }),
     put: ({ context }, params: { placement: "before" | "after" }) => {
@@ -179,6 +193,7 @@ export const vimMachine = setup({
                 type: "moveToChar",
                 params: { operation: "find", direction: "forward" },
               },
+              { type: "clearVisual" },
               { type: "clearCount" },
             ],
           },
@@ -202,6 +217,7 @@ export const vimMachine = setup({
                 type: "moveToChar",
                 params: { operation: "find", direction: "backward" },
               },
+              { type: "clearVisual" },
               { type: "clearCount" },
             ],
           },
@@ -225,6 +241,7 @@ export const vimMachine = setup({
                 type: "moveToChar",
                 params: { operation: "till", direction: "forward" },
               },
+              { type: "clearVisual" },
               { type: "clearCount" },
             ],
           },
@@ -248,6 +265,7 @@ export const vimMachine = setup({
                 type: "moveToChar",
                 params: { operation: "till", direction: "backward" },
               },
+              { type: "clearVisual" },
               { type: "clearCount" },
             ],
           },
@@ -282,6 +300,7 @@ export const vimMachine = setup({
                 }),
               },
               { type: "clearOperator" },
+              { type: "clearVisual" },
               { type: "clearCount" },
             ],
           },
@@ -301,6 +320,7 @@ export const vimMachine = setup({
                 }),
               },
               { type: "clearOperator" },
+              { type: "clearVisual" },
               { type: "clearCount" },
             ],
           },
@@ -338,6 +358,7 @@ export const vimMachine = setup({
                 }),
               },
               { type: "clearOperator" },
+              { type: "clearVisual" },
               { type: "clearCount" },
             ],
           },
@@ -357,6 +378,7 @@ export const vimMachine = setup({
                 }),
               },
               { type: "clearOperator" },
+              { type: "clearVisual" },
               { type: "clearCount" },
             ],
           },
@@ -576,6 +598,162 @@ export const vimMachine = setup({
         ],
       },
     },
+    "visual-char": {
+      entry: { type: "startVisual", params: { mode: "charwise" } },
+      // visual entry sets `context.visual` before these actions; leaving actions
+      // consume it before clearVisual runs.
+      on: {
+        KEY: [
+          {
+            guard: { type: "keyIs", params: { key: "escape" } },
+            target: "normal",
+            actions: [{ type: "clearVisual" }, { type: "clearCount" }],
+          },
+          {
+            guard: { type: "keyExtendsCount" },
+            actions: { type: "appendCount" },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "y" } },
+            target: "normal",
+            actions: [
+              {
+                type: "yank",
+                params: ({ context }) => ({ target: context.visual! }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "d" } },
+            target: "normal",
+            actions: [
+              {
+                type: "delete",
+                params: ({ context }) => ({ target: context.visual! }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "x" } },
+            target: "normal",
+            actions: [
+              {
+                type: "delete",
+                params: ({ context }) => ({ target: context.visual! }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "c" } },
+            target: "insert",
+            actions: [
+              {
+                type: "change",
+                params: ({ context }) => ({ target: context.visual! }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "G" } },
+            actions: [
+              { type: "goToLine", params: { line: "last" } },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIsMotionNoun" },
+            actions: [{ type: "moveByEventNoun" }, { type: "clearCount" }],
+          },
+          { actions: { type: "clearCount" } },
+        ],
+      },
+    },
+    "visual-line": {
+      // visual entry sets `context.visual` before these actions; leaving actions
+      // consume it before clearVisual runs.
+      entry: { type: "startVisual", params: { mode: "linewise" } },
+      on: {
+        KEY: [
+          {
+            guard: { type: "keyIs", params: { key: "escape" } },
+            target: "normal",
+            actions: [{ type: "clearVisual" }, { type: "clearCount" }],
+          },
+          {
+            guard: { type: "keyExtendsCount" },
+            actions: { type: "appendCount" },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "y" } },
+            target: "normal",
+            actions: [
+              {
+                type: "yank",
+                params: ({ context }) => ({ target: context.visual! }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "d" } },
+            target: "normal",
+            actions: [
+              {
+                type: "delete",
+                params: ({ context }) => ({ target: context.visual! }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "x" } },
+            target: "normal",
+            actions: [
+              {
+                type: "delete",
+                params: ({ context }) => ({ target: context.visual! }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "c" } },
+            target: "insert",
+            actions: [
+              {
+                type: "change",
+                params: ({ context }) => ({ target: context.visual! }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "G" } },
+            actions: [
+              { type: "goToLine", params: { line: "last" } },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIsMotionNoun" },
+            actions: [{ type: "moveByEventNoun" }, { type: "clearCount" }],
+          },
+          { actions: { type: "clearCount" } },
+        ],
+      },
+    },
     normal: {
       on: {
         KEY: [
@@ -635,10 +813,20 @@ export const vimMachine = setup({
             actions: { type: "setOperator", params: { name: "yank" } },
           },
           {
+            guard: { type: "keyIs", params: { key: "v" } },
+            target: "visual-char",
+            actions: { type: "clearCount" },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "V" } },
+            target: "visual-line",
+            actions: { type: "clearCount" },
+          },
+          {
             guard: { type: "keyIs", params: { key: "C" } },
             target: "insert",
             actions: [
-              { type: "change", params: { noun: "lineEnd" } },
+              { type: "change", params: { target: "lineEnd" } },
               { type: "placeCaretAfterCursor" },
               { type: "clearCount" },
             ],
@@ -673,7 +861,7 @@ export const vimMachine = setup({
           {
             guard: { type: "keyIs", params: { key: "D" } },
             actions: [
-              { type: "delete", params: { noun: "lineEnd" } },
+              { type: "delete", params: { target: "lineEnd" } },
               { type: "clearCount" },
             ],
           },
@@ -706,14 +894,14 @@ export const vimMachine = setup({
           {
             guard: { type: "keyIs", params: { key: "x" } },
             actions: [
-              { type: "delete", params: { noun: "right" } },
+              { type: "delete", params: { target: "right" } },
               { type: "clearCount" },
             ],
           },
           {
             guard: { type: "keyIs", params: { key: "X" } },
             actions: [
-              { type: "delete", params: { noun: "left" } },
+              { type: "delete", params: { target: "left" } },
               { type: "clearCount" },
             ],
           },
