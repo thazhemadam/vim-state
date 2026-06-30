@@ -127,6 +127,7 @@ export const vimMachine = setup({
       params: { target: VimOperatorTarget; transform: VimCaseTransform },
     ) => context.editor.transformCase(params.target, params.transform),
     toggleCase: ({ context }) => context.editor.toggleCase(context.count ?? 1),
+    undo: ({ context }) => context.editor.undo(),
   },
   guards: {
     keyIs: ({ event }, params: { key: string }) => event.key === params.key,
@@ -1061,6 +1062,10 @@ export const vimMachine = setup({
           {
             guard: { type: "keyIs", params: { key: "g" } },
             target: "g-prefix",
+          },
+          {
+            guard: { type: "keyIs", params: { key: "u" } },
+            actions: [{ type: "undo" }, { type: "clearCount" }],
           },
           {
             guard: { type: "keyIs", params: { key: "D" } },

@@ -266,6 +266,12 @@ class VimEditorCore implements VimEditorApi {
     this.replace("right", { text: char, type: "charwise" });
   }
 
+  /** Restore the latest host-provided undo point. */
+  undo(): void {
+    this.host.undoEditor?.();
+    this.clampCursorColumn();
+  }
+
   /** Move left until the Normal-mode cursor sits on a character, or column 0 for an empty line. */
   clampCursorColumn(): void {
     while (this.cursor.col > normalMaxColumn(this.currentLine)) {

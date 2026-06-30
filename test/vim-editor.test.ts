@@ -5,6 +5,7 @@ import { VimEditor, type VimEditorHost } from "../src/vim/editor.js";
 
 class FakeHost implements VimEditorHost {
   inputs: string[] = [];
+  undoCount = 0;
   lines = ["abc"];
   cursor = { line: 0, col: 1 };
 
@@ -14,6 +15,10 @@ class FakeHost implements VimEditorHost {
 
   getLines(): string[] {
     return this.lines;
+  }
+
+  undoEditor(): void {
+    this.undoCount += 1;
   }
 
   sendInputToEditor(data: string): void {
@@ -41,4 +46,12 @@ test("VimEditor mixin forwards semantic edits to the host editor", () => {
 
   assert.deepEqual(editor.inputs, ["\x01", "\x01", "\x1b[3~"]);
   assert.deepEqual(editor.lines, ["abc"]);
+});
+
+test("VimEditor mixin delegates undo to the host editor", () => {
+  const editor = new FakeVimEditor();
+
+  editor.vimEditor.undo();
+
+  assert.equal(editor.undoCount, 1);
 });

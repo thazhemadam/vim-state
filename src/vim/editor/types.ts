@@ -106,6 +106,7 @@ export interface VimEditorApi extends Pick<VimEditorHost, "getCursor"> {
   put(register: VimRegister, placement: "before" | "after"): void;
   replaceCharUnderCursor(char: string): void;
   toggleCase(count?: number): void;
+  undo(): void;
   clampCursorColumn(): void;
 }
 
@@ -116,6 +117,8 @@ export type Constructor<T = {}> = new (...args: any[]) => T;
 export interface VimEditorHost {
   getCursor(): VimPosition;
   getLines(): string[];
+  /** Restore the most recent host undo point, when supported. */
+  undoEditor?(): void;
   /** Forward raw input/control bytes to the underlying host editor. */
   sendInputToEditor(data: string): void;
 }
