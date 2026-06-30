@@ -1003,6 +1003,23 @@ test("VimPiEditor renders Visual mode labels", () => {
   assert.match(editor.render(40).at(-1) ?? "", /-- VISUAL LINE --$/);
 });
 
+test("VimPiEditor highlights Visual selections", () => {
+  const charwise = createEditorWithText("abcdef");
+  play(charwise, [ESC, "0", "v", "l", "l"]);
+  assert.ok(charwise.render(40)[1]?.includes("\x1b[7mabc\x1b[0mdef"));
+
+  const focused = createEditorWithText("hello\nbeautiful\nworld");
+  focused.focused = true;
+  play(focused, [ESC, "k", "k", "0", "l", "l", "v", "j", "j"]);
+  assert.ok(focused.render(40)[3]?.includes("\x1b[0mld"));
+
+  const linewise = createEditorWithText("one\ntwo\nthree");
+  play(linewise, [ESC, "g", "g", "V", "j"]);
+  const rendered = linewise.render(40);
+  assert.ok(rendered[1]?.includes("\x1b[7mone\x1b[0m"));
+  assert.ok(rendered[2]?.includes("\x1b[7mtwo\x1b[0m"));
+});
+
 test("VimPiEditor applies Normal-mode insert-entry commands", () => {
   for (const spec of [
     {

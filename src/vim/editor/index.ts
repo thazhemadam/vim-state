@@ -43,6 +43,7 @@ export type {
   VimNoun,
   VimOperator,
   VimOperatorTarget,
+  VimPosition,
   VimRegister,
   VimVisualMode,
   VimVisualSelection,
