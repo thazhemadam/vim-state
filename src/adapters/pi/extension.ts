@@ -10,6 +10,11 @@ export default function vimPiExtension(pi: ExtensionAPI): void {
       editor = new VimPiEditor(tui, theme, keybindings);
       return editor;
     });
+
+    const prefill = process.env.VIM_PI_PREFILL;
+    if (prefill && !ctx.ui.getEditorText()) {
+      ctx.ui.setEditorText(prefill.replace(/\\n/g, "\n"));
+    }
   });
 
   pi.on("session_shutdown", () => {

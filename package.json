@@ -22,7 +22,7 @@
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "test": "tsx --test test/**/*.test.ts",
-    "dev:pi": "PI_CODING_AGENT_DIR=$PWD/.pi-dev/agent PI_CODING_AGENT_SESSION_DIR=$PWD/.pi-dev/sessions pi --no-extensions -e .",
+    "dev:pi": "VIM_PI_PREFILL='Lorem ipsum dolor sit amet, consectetur adipiscing elit.\\nSed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' PI_CODING_AGENT_DIR=$PWD/.pi-dev/agent PI_CODING_AGENT_SESSION_DIR=$PWD/.pi-dev/sessions pi --no-extensions -e .",
     "dev:pi:clean": "rm -rf .pi-dev",
     "format": "prettier --write ."
   },
