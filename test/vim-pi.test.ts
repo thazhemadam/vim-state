@@ -1022,6 +1022,33 @@ test("VimPiEditor changes case in Visual selections", () => {
   assertRegister(linewise, { text: "AbC\n", type: "charwise" });
 });
 
+test("VimPiEditor joins lines in Visual selections", () => {
+  for (const spec of [
+    {
+      name: "J joins Visual-line selection",
+      keys: [ESC, "g", "g", "V", "j", "J"],
+    },
+    {
+      name: "J joins charwise Visual selection lines",
+      keys: [ESC, "g", "g", "v", "j", "J"],
+    },
+    {
+      name: "J joins the next line for one selected line",
+      keys: [ESC, "g", "g", "v", "l", "l", "J"],
+    },
+  ]) {
+    const editor = createEditorWithText("one\n  two\nthree");
+    play(editor, [ESC, "g", "g", "y", "w", ...spec.keys]);
+    assertEditor(
+      editor,
+      { text: "one two\nthree", cursor: { line: 0, col: 3 }, mode: "normal" },
+      spec.name,
+    );
+    assertRegister(editor, { text: "one\n  ", type: "charwise" }, spec.name);
+    assert.equal(editor.vimSnapshot.context.visual, undefined, spec.name);
+  }
+});
+
 test("VimPiEditor exits Visual mode without changing the buffer", () => {
   const editor = createEditorWithText("abcdef");
   play(editor, [ESC, "0", "v", "l"]);

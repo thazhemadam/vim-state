@@ -84,6 +84,7 @@ export interface VimEditorApi extends Pick<VimEditorHost, "getCursor"> {
   insertLineBelow(): void;
   insertLineAbove(): void;
   joinLines(count?: number): void;
+  join(target: VimOperatorTarget): void;
   goToLine(line: VimLineTarget): void;
   moveToChar(
     operation: VimFindOperation,

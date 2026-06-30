@@ -73,6 +73,8 @@ export const vimMachine = setup({
     insertLineBelow: ({ context }) => context.editor.insertLineBelow(),
     insertLineAbove: ({ context }) => context.editor.insertLineAbove(),
     joinLines: ({ context }) => context.editor.joinLines(context.count ?? 2),
+    join: ({ context }, params: { target: VimOperatorTarget }) =>
+      context.editor.join(params.target),
     goToLine: ({ context }, params: { line: VimLineTarget }) =>
       context.editor.goToLine(context.count ?? params.line),
     placeCaretAtLineStart: ({ context }) =>
@@ -743,6 +745,18 @@ export const vimMachine = setup({
             ],
           },
           {
+            guard: { type: "keyIs", params: { key: "J" } },
+            target: "normal",
+            actions: [
+              {
+                type: "join",
+                params: ({ context }) => ({ target: context.visual! }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
             guard: { type: "keyIs", params: { key: "G" } },
             actions: [
               { type: "goToLine", params: { line: "last" } },
@@ -884,6 +898,18 @@ export const vimMachine = setup({
                   target: context.visual!,
                   transform: "upper" as const,
                 }),
+              },
+              { type: "clearVisual" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "J" } },
+            target: "normal",
+            actions: [
+              {
+                type: "join",
+                params: ({ context }) => ({ target: context.visual! }),
               },
               { type: "clearVisual" },
               { type: "clearCount" },

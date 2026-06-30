@@ -91,6 +91,20 @@ class VimEditorCore implements VimEditorApi {
     }
   }
 
+  /** Join the lines covered by a target range, like Visual `J`. */
+  join(target: VimOperatorTarget): void {
+    const range = this.resolveOperatorRange(target);
+    if (!range) {
+      return;
+    }
+
+    const startLine =
+      range.type === "linewise" ? range.startLine : range.start.line;
+    const endLine = range.type === "linewise" ? range.endLine : range.end.line;
+    this.moveCursorToPosition({ line: startLine, col: 0 });
+    this.joinLines(endLine - startLine + 1);
+  }
+
   /** Move to a target line, using 1-based line numbers for counted Vim commands. */
   goToLine(line: VimLineTarget): void {
     const targetLine =
