@@ -61,9 +61,14 @@ class VimEditorCore implements VimEditorApi {
     return this.cursor;
   }
 
-  /** Apply a supported Normal-mode cursor motion. */
-  move(motion: VimMotion): void {
-    const result = this.resolveMotion(motion);
+  /** Apply a Vim motion, or move directly to an absolute cursor position. */
+  move(target: VimMotion | VimPosition): void {
+    if (isVimPosition(target)) {
+      this.moveCursorToPosition(target);
+      return;
+    }
+
+    const result = this.resolveMotion(target);
     if (!result) {
       return;
     }
@@ -697,6 +702,10 @@ function isVisualSelection(
   target: VimOperatorTarget,
 ): target is VimVisualSelection {
   return typeof target === "object" && "mode" in target && "anchor" in target;
+}
+
+function isVimPosition(target: VimMotion | VimPosition): target is VimPosition {
+  return typeof target === "object" && "line" in target && "col" in target;
 }
 
 /** Apply the requested case transform to plain text. */

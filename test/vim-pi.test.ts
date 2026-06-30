@@ -978,6 +978,33 @@ test("VimPiEditor applies Visual-mode selections", () => {
   }
 });
 
+test("VimPiEditor swaps the Visual active end", () => {
+  for (const key of ["o", "O"]) {
+    const editor = createEditorWithText("abcd");
+    play(editor, [ESC, "0", "l", "v", "l", "l", key]);
+    assertEditor(editor, { cursor: { line: 0, col: 1 }, mode: "normal" }, key);
+    assert.deepEqual(
+      editor.vimSnapshot.context.visual,
+      { mode: "charwise", anchor: { line: 0, col: 3 } },
+      key,
+    );
+
+    play(editor, ["h", "y"]);
+    assertRegister(editor, { text: "abcd", type: "charwise" }, key);
+    assert.equal(editor.vimSnapshot.context.visual, undefined, key);
+  }
+
+  const linewise = createEditorWithText("one\ntwo\nthree");
+  play(linewise, [ESC, "g", "g", "V", "j", "o"]);
+  assertEditor(linewise, { cursor: { line: 0, col: 0 }, mode: "normal" });
+  assert.deepEqual(linewise.vimSnapshot.context.visual, {
+    mode: "linewise",
+    anchor: { line: 1, col: 0 },
+  });
+  linewise.handleInput("y");
+  assertRegister(linewise, { text: "one\ntwo\n", type: "linewise" });
+});
+
 test("VimPiEditor replaces Visual selections with the unnamed register", () => {
   for (const spec of [
     { key: "p", name: "p replaces charwise selection" },

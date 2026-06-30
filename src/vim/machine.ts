@@ -44,6 +44,18 @@ export const vimMachine = setup({
       }),
     }),
     clearVisual: assign({ visual: undefined }),
+    swapVisualAnchor: assign({
+      visual: ({ context }) => {
+        const visual = context.visual;
+        if (!visual) {
+          return undefined;
+        }
+
+        const active = context.editor.getCursor();
+        context.editor.move(visual.anchor);
+        return { ...visual, anchor: active };
+      },
+    }),
     placeCaretAfterCursor: ({ context }) =>
       context.editor.placeCaretAfterCursor(),
     placeCaretAtLineEnd: ({ context }) => context.editor.placeCaretAtLineEnd(),
@@ -628,6 +640,14 @@ export const vimMachine = setup({
             actions: { type: "appendCount" },
           },
           {
+            guard: { type: "keyIs", params: { key: "o" } },
+            actions: [{ type: "swapVisualAnchor" }, { type: "clearCount" }],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "O" } },
+            actions: [{ type: "swapVisualAnchor" }, { type: "clearCount" }],
+          },
+          {
             guard: { type: "keyIs", params: { key: "y" } },
             target: "normal",
             actions: [
@@ -785,6 +805,14 @@ export const vimMachine = setup({
           {
             guard: { type: "keyExtendsCount" },
             actions: { type: "appendCount" },
+          },
+          {
+            guard: { type: "keyIs", params: { key: "o" } },
+            actions: [{ type: "swapVisualAnchor" }, { type: "clearCount" }],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "O" } },
+            actions: [{ type: "swapVisualAnchor" }, { type: "clearCount" }],
           },
           {
             guard: { type: "keyIs", params: { key: "y" } },

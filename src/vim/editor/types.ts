@@ -80,7 +80,7 @@ export type VimMotionResult = {
 
 /** Semantic editor operations the Vim state machine can request. */
 export interface VimEditorApi extends Pick<VimEditorHost, "getCursor"> {
-  move(motion: VimMotion): void;
+  move(target: VimMotion | VimPosition): void;
   insertLineBelow(): void;
   insertLineAbove(): void;
   joinLines(count?: number): void;
