@@ -90,6 +90,20 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
         this.vim.send({ type: "KEY", key: "escape" });
         this.syncCursorStyle();
       }
+    } else if (shouldHandleNormalUpDown(previousSnapshot, event.key)) {
+      const atHistoryBoundary =
+        event.key === "up"
+          ? this.getCursor().line === 0
+          : this.getCursor().line === this.getLines().length - 1;
+
+      if (atHistoryBoundary) {
+        // If a user presses only "Up"/"Down" at a prompt-history boundary,
+        // pass it through so Pi's prompt history can be cycled.
+        super.handleInput(data);
+        this.vimEditor.clampCursorColumn();
+      } else {
+        this.vimEditor.move(event.key);
+      }
     } else if (mode === "normal" && this.isAppShortcutInput(data)) {
       super.handleInput(data);
     }
@@ -185,6 +199,17 @@ function shouldPassOnlyEnterThrough(
     key === "enter" &&
     snapshot.context.count === undefined &&
     (snapshot.value === "normal" || isVimVisualMode(snapshot))
+  );
+}
+
+function shouldHandleNormalUpDown(
+  snapshot: VimSnapshot,
+  key: string,
+): key is "up" | "down" {
+  return (
+    snapshot.value === "normal" &&
+    snapshot.context.count === undefined &&
+    (key === "up" || key === "down")
   );
 }
 

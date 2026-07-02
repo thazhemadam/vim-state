@@ -1385,6 +1385,34 @@ test("VimPiEditor passes only bare Enter through in Normal mode", () => {
   assert.deepEqual(submitted, ["abc"]);
 });
 
+test("VimPiEditor passes bare up/down through in Normal mode for prompt history", () => {
+  const editor = createEditor();
+  editor.addToHistory("first");
+  editor.addToHistory("second");
+
+  editor.handleInput(ESC);
+  editor.handleInput("\x1b[A");
+  assertEditor(editor, {
+    text: "second",
+    cursor: { line: 0, col: 0 },
+    mode: "normal",
+  });
+
+  editor.handleInput("\x1b[A");
+  assertEditor(editor, {
+    text: "first",
+    cursor: { line: 0, col: 0 },
+    mode: "normal",
+  });
+
+  editor.handleInput("\x1b[B");
+  assertEditor(editor, {
+    text: "second",
+    cursor: { line: 0, col: 6 },
+    mode: "normal",
+  });
+});
+
 test("VimPiEditor passes only bare Enter through in Visual mode", () => {
   const submitted: string[] = [];
   const editor = createEditor();
