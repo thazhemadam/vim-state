@@ -1379,6 +1379,34 @@ test("VimPiEditor passes only bare Enter through in Normal mode", () => {
   assert.deepEqual(submitted, ["abc"]);
 });
 
+test("VimPiEditor passes only bare Enter through in Visual mode", () => {
+  const submitted: string[] = [];
+  const editor = createEditor();
+  editor.onSubmit = (value) => submitted.push(value);
+
+  play(editor, ["a", "b", "c", ESC, "v", "h", "\r"]);
+
+  assert.deepEqual(submitted, ["abc"]);
+  assert.equal(getVimModeLabel(editor.vimSnapshot), "-- NORMAL --");
+  assertEditor(editor, {
+    text: "",
+    cursor: { line: 0, col: 0 },
+    mode: "normal",
+  });
+
+  const modified = createEditor();
+  modified.onSubmit = (value) => submitted.push(value);
+  play(modified, ["a", "b", "c", ESC, "v", "h", "\x1b[13;2u", "\x1b[13;5u"]);
+
+  assertEditor(modified, {
+    text: "abc",
+    cursor: { line: 0, col: 1 },
+    mode: "normal",
+  });
+  assert.equal(getVimModeLabel(modified.vimSnapshot), "-- VISUAL --");
+  assert.deepEqual(submitted, ["abc"]);
+});
+
 test("VimPiEditor passes configured app shortcuts through in Normal mode", () => {
   let interrupted = false;
   let cleared = false;

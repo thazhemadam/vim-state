@@ -79,12 +79,14 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
       isPrintablePiInput(data)
     ) {
       super.handleInput(data);
-    } else if (
-      previousSnapshot.value === "normal" &&
-      previousSnapshot.context.count === undefined &&
-      event.key === "enter"
-    ) {
+    } else if (shouldPassOnlyEnterThrough(previousSnapshot, event.key)) {
+      // If a user presses only "Enter", we should pass it through
+      // so the can be prompt can be submitted.
       super.handleInput(data);
+      if (isVimVisualMode(previousSnapshot)) {
+        this.vim.send({ type: "KEY", key: "escape" });
+        this.syncCursorStyle();
+      }
     } else if (mode === "normal" && this.isAppShortcutInput(data)) {
       super.handleInput(data);
     }
@@ -170,6 +172,17 @@ function vimCursorStyle(snapshot: VimSnapshot): VimCursorStyle {
     return "underline";
   }
   return getVimMode(snapshot) === "insert" ? "bar" : "block";
+}
+
+function shouldPassOnlyEnterThrough(
+  snapshot: VimSnapshot,
+  key: string,
+): boolean {
+  return (
+    key === "enter" &&
+    snapshot.context.count === undefined &&
+    (snapshot.value === "normal" || isVimVisualMode(snapshot))
+  );
 }
 
 const REVERSE_VIDEO_CURSOR = /\x1b\[7m([^\x1b]*)\x1b\[0m/;
