@@ -20,7 +20,7 @@ export default function vimPiExtension(pi: ExtensionAPI): void {
   pi.registerFlag(piVimSystemClipboardFlag, {
     description: "Mirror Vim's unnamed register to the system clipboard",
     type: "boolean",
-    default: false,
+    default: true,
   });
 
   let editor: VimPiEditor | undefined;
