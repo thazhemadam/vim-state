@@ -75,7 +75,7 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
     // If you were in Insert mode and are still in Insert mode,
     // then pass the data to the underlying Pi editor.
     if (previousMode === "insert" && mode === "insert") {
-      super.handleInput(event.key === "enter" ? "\n" : data);
+      super.handleInput(data);
     } else if (
       previousMode === "replace" &&
       mode === "replace" &&
