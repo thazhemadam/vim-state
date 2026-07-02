@@ -140,6 +140,10 @@ export const vimMachine = setup({
       context.operator?.name === params.name &&
       Array.from(event.key).length === 1 &&
       event.key >= " ",
+    keyIsWithOperator: (
+      { context, event },
+      params: { key: string; name: VimOperator["name"] },
+    ) => context.operator?.name === params.name && event.key === params.key,
     keyExtendsCount: ({ context, event }) =>
       /^[1-9]$/.test(event.key) ||
       (event.key === "0" && context.count !== undefined),
@@ -528,6 +532,114 @@ export const vimMachine = setup({
         ],
       },
     },
+    "operator-inner-object": {
+      on: {
+        KEY: [
+          {
+            guard: { type: "keyIs", params: { key: "escape" } },
+            target: "normal",
+            actions: [{ type: "clearOperator" }, { type: "clearCount" }],
+          },
+          {
+            guard: {
+              type: "keyIsWithOperator",
+              params: { name: "change", key: "w" },
+            },
+            target: "insert",
+            actions: [
+              {
+                type: "applyPendingOperatorToNoun",
+                params: {
+                  noun: {
+                    type: "textObject" as const,
+                    kind: "inner" as const,
+                    object: "word" as const,
+                  },
+                },
+              },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "w" } },
+            target: "normal",
+            actions: [
+              {
+                type: "applyPendingOperatorToNoun",
+                params: {
+                  noun: {
+                    type: "textObject" as const,
+                    kind: "inner" as const,
+                    object: "word" as const,
+                  },
+                },
+              },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            target: "normal",
+            actions: [{ type: "clearOperator" }, { type: "clearCount" }],
+          },
+        ],
+      },
+    },
+    "operator-around-object": {
+      on: {
+        KEY: [
+          {
+            guard: { type: "keyIs", params: { key: "escape" } },
+            target: "normal",
+            actions: [{ type: "clearOperator" }, { type: "clearCount" }],
+          },
+          {
+            guard: {
+              type: "keyIsWithOperator",
+              params: { name: "change", key: "w" },
+            },
+            target: "insert",
+            actions: [
+              {
+                type: "applyPendingOperatorToNoun",
+                params: {
+                  noun: {
+                    type: "textObject" as const,
+                    kind: "around" as const,
+                    object: "word" as const,
+                  },
+                },
+              },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            guard: { type: "keyIs", params: { key: "w" } },
+            target: "normal",
+            actions: [
+              {
+                type: "applyPendingOperatorToNoun",
+                params: {
+                  noun: {
+                    type: "textObject" as const,
+                    kind: "around" as const,
+                    object: "word" as const,
+                  },
+                },
+              },
+              { type: "clearOperator" },
+              { type: "clearCount" },
+            ],
+          },
+          {
+            target: "normal",
+            actions: [{ type: "clearOperator" }, { type: "clearCount" }],
+          },
+        ],
+      },
+    },
     "g-prefix": {
       on: {
         KEY: [
@@ -575,6 +687,14 @@ export const vimMachine = setup({
           {
             guard: { type: "keyIs", params: { key: "T" } },
             target: "operator-till-backward",
+          },
+          {
+            guard: { type: "keyIs", params: { key: "i" } },
+            target: "operator-inner-object",
+          },
+          {
+            guard: { type: "keyIs", params: { key: "a" } },
+            target: "operator-around-object",
           },
           {
             guard: { type: "keyIsOperatorNoun", params: { name: "change" } },

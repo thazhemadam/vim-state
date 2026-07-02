@@ -936,6 +936,52 @@ test("VimPiEditor cancels a pending change operator", () => {
   });
 });
 
+test("VimPiEditor applies word text objects", () => {
+  for (const spec of [
+    {
+      name: "diw deletes inner word",
+      keys: [ESC, "0", "l", "d", "i", "w"],
+      textAfter: " two",
+      cursor: { line: 0, col: 0 },
+      mode: "normal" as const,
+      register: { text: "one", type: "charwise" as const },
+    },
+    {
+      name: "daw deletes word and following space",
+      keys: [ESC, "0", "l", "d", "a", "w"],
+      textAfter: "two",
+      cursor: { line: 0, col: 0 },
+      mode: "normal" as const,
+      register: { text: "one ", type: "charwise" as const },
+    },
+    {
+      name: "ciw changes inner word",
+      keys: [ESC, "0", "l", "c", "i", "w", "X"],
+      textAfter: "X two",
+      cursor: { line: 0, col: 1 },
+      mode: "insert" as const,
+      register: { text: "one", type: "charwise" as const },
+    },
+    {
+      name: "yaw yanks around word",
+      keys: [ESC, "0", "l", "y", "a", "w"],
+      textAfter: "one two",
+      cursor: { line: 0, col: 1 },
+      mode: "normal" as const,
+      register: { text: "one ", type: "charwise" as const },
+    },
+  ]) {
+    const editor = createEditorWithText("one two");
+    play(editor, spec.keys);
+    assertEditor(
+      editor,
+      { text: spec.textAfter, cursor: spec.cursor, mode: spec.mode },
+      spec.name,
+    );
+    assertRegister(editor, spec.register, spec.name);
+  }
+});
+
 test("VimPiEditor applies Visual-mode selections", () => {
   for (const spec of [
     {

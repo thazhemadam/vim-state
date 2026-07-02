@@ -24,6 +24,8 @@ export function getVimMode(snapshot: VimSnapshot): VimMode {
     case "operator-find-backward":
     case "operator-till-forward":
     case "operator-till-backward":
+    case "operator-inner-object":
+    case "operator-around-object":
     case "operator-pending":
     case "visual-char":
     case "visual-line":
@@ -44,7 +46,9 @@ export function isVimOperatorMode(snapshot: VimSnapshot): boolean {
     snapshot.value === "operator-find-forward" ||
     snapshot.value === "operator-find-backward" ||
     snapshot.value === "operator-till-forward" ||
-    snapshot.value === "operator-till-backward"
+    snapshot.value === "operator-till-backward" ||
+    snapshot.value === "operator-inner-object" ||
+    snapshot.value === "operator-around-object"
   );
 }
 

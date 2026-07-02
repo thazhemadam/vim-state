@@ -29,6 +29,7 @@ import type {
   VimMotionResult,
   VimOperatorTarget,
   VimPosition,
+  VimTextObject,
   VimRange,
   VimRegister,
   VimVisualSelection,
@@ -49,6 +50,7 @@ export type {
   VimOperatorTarget,
   VimPosition,
   VimRegister,
+  VimTextObject,
   VimVisualMode,
   VimVisualSelection,
 } from "./types.js";
@@ -501,15 +503,62 @@ class VimEditorCore implements VimEditorApi {
     }
 
     if (typeof noun === "object") {
-      return this.resolveFindMotion(
-        noun.operation,
-        noun.direction,
-        noun.char,
-        count,
-      )?.range;
+      return noun.type === "textObject"
+        ? this.resolveTextObjectRange(noun)
+        : this.resolveFindMotion(
+            noun.operation,
+            noun.direction,
+            noun.char,
+            count,
+          )?.range;
     }
 
     return this.resolveMotion(noun, count)?.range;
+  }
+
+  private resolveTextObjectRange(object: VimTextObject): VimRange | undefined {
+    if (object.object !== "word") {
+      return undefined;
+    }
+
+    const line = this.currentLine;
+    let start = this.cursor.col;
+    while (start < line.length && /\s/.test(line[start]!)) {
+      start += 1;
+    }
+    if (start >= line.length) {
+      return undefined;
+    }
+
+    const word = /[A-Za-z0-9_]/.test(line[start]!)
+      ? /[A-Za-z0-9_]/
+      : /[^\sA-Za-z0-9_]/;
+    while (start > 0 && word.test(line[start - 1]!)) {
+      start -= 1;
+    }
+
+    let end = start;
+    while (end < line.length && word.test(line[end]!)) {
+      end += 1;
+    }
+
+    if (object.kind === "around") {
+      const after = end;
+      while (end < line.length && /\s/.test(line[end]!)) {
+        end += 1;
+      }
+      if (end === after) {
+        while (start > 0 && /\s/.test(line[start - 1]!)) {
+          start -= 1;
+        }
+      }
+    }
+
+    return {
+      type: "charwise",
+      start: { line: this.cursor.line, col: start },
+      end: { line: this.cursor.line, col: end },
+    };
   }
 
   private resolveVisualRange(selection: VimVisualSelection): VimRange {

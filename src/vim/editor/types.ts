@@ -15,6 +15,13 @@ export type VimFindTarget = {
   char: string;
 };
 
+/** Operator-only text object target. */
+export type VimTextObject = {
+  type: "textObject";
+  kind: "inner" | "around";
+  object: "word";
+};
+
 /** Supported cursor motions understood by the current Vim editor core. */
 export type VimMotion =
   | "left"
@@ -65,7 +72,7 @@ export type VimVisualSelection = {
 };
 
 /** Motion or operator-range noun an operator can act on (`line` backs doubled operators like `dd`). */
-export type VimNoun = VimMotion | VimFindTarget | "line";
+export type VimNoun = VimMotion | VimFindTarget | VimTextObject | "line";
 
 export type VimOperatorTarget = VimNoun | VimVisualSelection;
 
