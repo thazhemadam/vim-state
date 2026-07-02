@@ -15,6 +15,7 @@ import {
 import {
   VimEditor,
   type VimEditorHost,
+  type VimEditorOptions,
   type VimPosition,
   type VimVisualSelection,
 } from "../../vim/editor.js";
@@ -42,9 +43,11 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
     tui: TUI,
     theme: EditorTheme,
     keybindings: KeybindingsManager,
+    vimOptions: VimEditorOptions = {},
     options?: EditorOptions,
   ) {
     super(tui, theme, keybindings, options);
+    this.vimEditor.setOptions(vimOptions);
     this.vim = createActor(vimMachine, {
       input: { editor: this.vimEditor },
     }).start();

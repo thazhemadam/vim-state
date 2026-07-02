@@ -17,7 +17,9 @@ test("Pi keymap normalizes raw input into Vim keys", () => {
 
 test("Pi extension installs a Vim editor", () => {
   let installedFactory: unknown;
+  let registeredFlag: unknown;
   vimPiExtension({
+    getFlag: () => false,
     on: (event: string, handler: unknown) => {
       if (event === "session_start") {
         (handler as (event: unknown, ctx: unknown) => void)(undefined, {
@@ -29,8 +31,12 @@ test("Pi extension installs a Vim editor", () => {
       }
     },
     registerCommand: () => {},
+    registerFlag: (name: string) => {
+      registeredFlag = name;
+    },
   } as never);
 
+  assert.equal(registeredFlag, "vim-pi-system-clipboard");
   assert.equal(typeof installedFactory, "function");
 });
 
