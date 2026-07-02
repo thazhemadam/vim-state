@@ -43,6 +43,16 @@ export type VimRegister = {
   type: "charwise" | "linewise";
 };
 
+export type VimEditorOptions = {
+  /**
+   * Called whenever an operation writes Vim's unnamed register.
+   * Hosts can use this to mirror the register to a system clipboard, remote
+   * clipboard, or any other external paste target. Leave unset to keep register
+   * writes inside Vim only.
+   */
+  onUnnamedRegisterWrite?: (register: VimRegister) => void;
+};
+
 /** Zero-based editor position. `col` is a UTF-16/string column for now. */
 export type VimPosition = { line: number; col: number };
 
@@ -101,6 +111,7 @@ export interface VimEditorApi extends Pick<VimEditorHost, "getCursor"> {
   replace(
     target: VimOperatorTarget,
     replacement: VimRegister,
+    emitRegisterWrite?: boolean,
   ): VimRegister | undefined;
   transformCase(target: VimOperatorTarget, transform: VimCaseTransform): void;
   put(register: VimRegister, placement: "before" | "after"): void;

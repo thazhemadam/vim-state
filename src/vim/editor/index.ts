@@ -21,6 +21,7 @@ import type {
   VimCaseTransform,
   VimEditorApi,
   VimEditorHost,
+  VimEditorOptions,
   VimFindDirection,
   VimFindOperation,
   VimLineTarget,
@@ -38,6 +39,7 @@ export type {
   VimCaseTransform,
   VimEditorApi,
   VimEditorHost,
+  VimEditorOptions,
   VimFindDirection,
   VimFindOperation,
   VimLineTarget,
@@ -55,7 +57,13 @@ export { nounForKey } from "./utils.js";
 
 /** Reusable Vim operations composed around a host editor. */
 class VimEditorCore implements VimEditorApi {
+  private options: VimEditorOptions = {};
+
   constructor(private readonly host: VimEditorHost) {}
+
+  setOptions(options: VimEditorOptions): void {
+    this.options = options;
+  }
 
   getCursor(): VimPosition {
     return this.cursor;
@@ -185,17 +193,23 @@ class VimEditorCore implements VimEditorApi {
   replace(
     target: VimOperatorTarget,
     replacement: VimRegister,
+    emitRegisterWrite = true,
   ): VimRegister | undefined {
-    return this.applyOperator(target, 1, (range) => {
-      const replaced = this.applyDeleteRange(range);
-      this.insertText(replacement.text);
-      if (replacement.type === "charwise") {
-        this.move("left");
-      } else {
-        this.clampCursorColumn();
-      }
-      return replaced;
-    });
+    return this.applyOperator(
+      target,
+      1,
+      (range) => {
+        const replaced = this.applyDeleteRange(range);
+        this.insertText(replacement.text);
+        if (replacement.type === "charwise") {
+          this.move("left");
+        } else {
+          this.clampCursorColumn();
+        }
+        return replaced;
+      },
+      emitRegisterWrite,
+    );
   }
 
   /** Normal `~`: toggle characters under the cursor, then advance like Vim. */
@@ -263,7 +277,7 @@ class VimEditorCore implements VimEditorApi {
       return;
     }
 
-    this.replace("right", { text: char, type: "charwise" });
+    this.replace("right", { text: char, type: "charwise" }, false);
   }
 
   /** Restore the latest host-provided undo point. */
@@ -535,6 +549,7 @@ class VimEditorCore implements VimEditorApi {
     target: VimOperatorTarget,
     count: number,
     applyRange: (range: VimRange) => VimRegister,
+    emitRegisterWrite = true,
   ): VimRegister | undefined {
     const range = this.resolveOperatorRange(target, count);
     if (!range) {
@@ -545,6 +560,11 @@ class VimEditorCore implements VimEditorApi {
     if (target !== "left") {
       this.clampCursorColumn();
     }
+
+    if (emitRegisterWrite) {
+      this.emitUnnamedRegisterWrite(register);
+    }
+
     return register;
   }
 
@@ -701,6 +721,13 @@ class VimEditorCore implements VimEditorApi {
   /** Build the register metadata for a range without mutating editor state. */
   private registerForRange(range: VimRange): VimRegister {
     return registerForRange(this.lines, range);
+  }
+
+  /** Emit successful unnamed-register writes to the configured host hook. */
+  private emitUnnamedRegisterWrite(register: VimRegister | undefined): void {
+    if (register) {
+      this.options.onUnnamedRegisterWrite?.(register);
+    }
   }
 }
 
