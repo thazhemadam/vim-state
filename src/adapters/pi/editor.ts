@@ -62,8 +62,10 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
   }
 
   handleInput(data: string): void {
-    const previousMode = getVimMode(this.vimSnapshot);
-    this.vim.send(piInputToVimEvent(data));
+    const previousSnapshot = this.vimSnapshot;
+    const previousMode = getVimMode(previousSnapshot);
+    const event = piInputToVimEvent(data);
+    this.vim.send(event);
     this.syncCursorStyle();
 
     const mode = getVimMode(this.vimSnapshot);
@@ -75,6 +77,12 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
       previousMode === "replace" &&
       mode === "replace" &&
       isPrintablePiInput(data)
+    ) {
+      super.handleInput(data);
+    } else if (
+      previousSnapshot.value === "normal" &&
+      previousSnapshot.context.count === undefined &&
+      event.key === "enter"
     ) {
       super.handleInput(data);
     } else if (mode === "normal" && this.isAppShortcutInput(data)) {

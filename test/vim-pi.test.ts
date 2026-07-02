@@ -1353,6 +1353,32 @@ test("VimPiEditor delegates insert input and ignores unmapped normal printable k
   assert.match(editor.render(40).at(-1) ?? "", /-- INSERT --$/);
 });
 
+test("VimPiEditor passes only bare Enter through in Normal mode", () => {
+  const submitted: string[] = [];
+  const editor = createEditor();
+  editor.onSubmit = (value) => submitted.push(value);
+
+  play(editor, ["a", "b", "c", ESC, "\r"]);
+
+  assert.deepEqual(submitted, ["abc"]);
+  assertEditor(editor, {
+    text: "",
+    cursor: { line: 0, col: 0 },
+    mode: "normal",
+  });
+
+  const modified = createEditor();
+  modified.onSubmit = (value) => submitted.push(value);
+  play(modified, ["a", "b", "c", ESC, "\x1b[13;2u", "\x1b[13;5u"]);
+
+  assertEditor(modified, {
+    text: "abc",
+    cursor: { line: 0, col: 2 },
+    mode: "normal",
+  });
+  assert.deepEqual(submitted, ["abc"]);
+});
+
 test("VimPiEditor passes configured app shortcuts through in Normal mode", () => {
   let interrupted = false;
   let cleared = false;
