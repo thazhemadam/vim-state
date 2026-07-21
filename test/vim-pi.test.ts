@@ -351,7 +351,7 @@ test("VimPiEditor applies Normal-mode count edge cases", () => {
   }
 });
 
-test("VimPiEditor maps Normal u to Pi's default undo binding", () => {
+test("VimPiEditor maps Normal u to vim-pi linear undo", () => {
   const editor = createEditorWithText("abc");
 
   play(editor, [ESC, "0", "x", "u"]);
@@ -363,7 +363,82 @@ test("VimPiEditor maps Normal u to Pi's default undo binding", () => {
   });
 });
 
-test("VimPiEditor maps Normal Ctrl-r to adapter-local redo", () => {
+test("VimPiEditor undoes an Insert session as one edit", () => {
+  const editor = createEditor();
+
+  play(editor, ["h", "e", "l", "l", "o", ESC, "u"]);
+
+  assertEditor(editor, {
+    text: "",
+    cursor: { line: 0, col: 0 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor redoes an undone Insert session", () => {
+  const editor = createEditor();
+
+  play(editor, ["h", "e", "l", "l", "o", ESC, "u", "\x12"]);
+
+  assertEditor(editor, {
+    text: "hello",
+    cursor: { line: 0, col: 4 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor keeps Insert Escape from resetting history as an app shortcut", () => {
+  const editor = createEditor(
+    [],
+    (data, action) => action === "app.interrupt" && matchesKey(data, "escape"),
+  );
+
+  play(editor, ["h", "e", "l", "l", "o", ESC, "u", "\x12"]);
+
+  assertEditor(editor, {
+    text: "hello",
+    cursor: { line: 0, col: 4 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor undoes appended Insert text as one edit", () => {
+  const editor = createEditorWithText("abc");
+
+  play(editor, [ESC, "A", "d", "e", ESC, "u"]);
+
+  assertEditor(editor, {
+    text: "abc",
+    cursor: { line: 0, col: 2 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor undoes a change operator and following Insert session together", () => {
+  const editor = createEditorWithText("cat dog");
+
+  play(editor, [ESC, "0", "c", "w", "r", "a", "t", ESC, "u"]);
+
+  assertEditor(editor, {
+    text: "cat dog",
+    cursor: { line: 0, col: 0 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor does not create undo entries for cursor-only movement", () => {
+  const editor = createEditorWithText("abc");
+
+  play(editor, [ESC, "0", "l", "u"]);
+
+  assertEditor(editor, {
+    text: "abc",
+    cursor: { line: 0, col: 1 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor maps Normal Ctrl-r to vim-pi linear redo", () => {
   const editor = createEditorWithText("abc");
 
   play(editor, [ESC, "0", "x", "u", "\x12"]);
@@ -387,7 +462,7 @@ test("VimPiEditor redoes multiple Vim-triggered undos in order", () => {
   });
 });
 
-test("VimPiEditor lets Normal u undo an adapter-local redo", () => {
+test("VimPiEditor lets Normal u undo a linear redo", () => {
   const editor = createEditorWithText("abc");
 
   play(editor, [ESC, "0", "x", "u", "\x12", "u"]);
@@ -399,13 +474,55 @@ test("VimPiEditor lets Normal u undo an adapter-local redo", () => {
   });
 });
 
-test("VimPiEditor clears redo after a new text edit", () => {
+test("VimPiEditor clears redo after a new Normal-mode text edit", () => {
   const editor = createEditorWithText("abc");
 
   play(editor, [ESC, "0", "x", "u", "x", "\x12"]);
 
   assertEditor(editor, {
     text: "bc",
+    cursor: { line: 0, col: 0 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor clears redo after a new Insert session", () => {
+  const editor = createEditorWithText("abc");
+
+  play(editor, [ESC, "0", "x", "u", "A", "!", ESC, "\x12"]);
+
+  assertEditor(editor, {
+    text: "abc!",
+    cursor: { line: 0, col: 3 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor clears history when bare Enter submits the prompt", () => {
+  const submitted: string[] = [];
+  const editor = createEditor();
+  editor.onSubmit = (value) => submitted.push(value);
+
+  play(editor, ["a", ESC, "\r", "u"]);
+
+  assert.deepEqual(submitted, ["a"]);
+  assertEditor(editor, {
+    text: "",
+    cursor: { line: 0, col: 0 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor starts a new history baseline after Insert-mode submit", () => {
+  const submitted: string[] = [];
+  const editor = createEditorWithText("abc");
+  editor.onSubmit = (value) => submitted.push(value);
+
+  play(editor, ["\r", "x", ESC, "u"]);
+
+  assert.deepEqual(submitted, ["abc"]);
+  assertEditor(editor, {
+    text: "",
     cursor: { line: 0, col: 0 },
     mode: "normal",
   });
