@@ -3,12 +3,12 @@ import type { VimSnapshot } from "./machine.js";
 
 /** Rendered status labels shown by the Pi adapter. */
 export type VimModeLabel =
-  | "-- INSERT --"
-  | "-- NORMAL --"
-  | "-- OPERATOR --"
-  | "-- VISUAL --"
-  | "-- VISUAL LINE --"
-  | "-- REPLACE --";
+  | "INSERT"
+  | "NORMAL"
+  | "OPERATOR"
+  | "VISUAL"
+  | "VISUAL LINE"
+  | "REPLACE";
 
 export function getVimMode(snapshot: VimSnapshot): VimMode {
   switch (snapshot.value) {
@@ -59,21 +59,21 @@ export function isVimVisualMode(snapshot: VimSnapshot): boolean {
 /** Return the user-visible mode label, including parser substates worth showing. */
 export function getVimModeLabel(snapshot: VimSnapshot): VimModeLabel {
   if (isVimOperatorMode(snapshot)) {
-    return "-- OPERATOR --";
+    return "OPERATOR";
   }
   if (snapshot.value === "visual-char") {
-    return "-- VISUAL --";
+    return "VISUAL";
   }
   if (snapshot.value === "visual-line") {
-    return "-- VISUAL LINE --";
+    return "VISUAL LINE";
   }
 
   switch (getVimMode(snapshot)) {
     case "insert":
-      return "-- INSERT --";
+      return "INSERT";
     case "normal":
-      return "-- NORMAL --";
+      return "NORMAL";
     case "replace":
-      return "-- REPLACE --";
+      return "REPLACE";
   }
 }

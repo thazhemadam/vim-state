@@ -216,11 +216,13 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
     }
 
     const label = getVimModeLabel(snapshot);
+    const labelWidth = label.length + 2;
+    const highlightedLabel = highlightVimModeLabel(label);
     const last = lines.length - 1;
-    if (visibleWidth(lines[last]!) >= label.length) {
+    if (visibleWidth(lines[last]!) >= labelWidth) {
       lines[last] =
-        truncateToWidth(lines[last]!, Math.max(0, width - label.length), "") +
-        label;
+        truncateToWidth(lines[last]!, Math.max(0, width - labelWidth), "") +
+        highlightedLabel;
     }
     return lines;
   }
@@ -426,6 +428,24 @@ function isNormalHistoryCommand(snapshot: VimSnapshot, key: string): boolean {
 }
 
 /** Return the hardware cursor shape for the current Vim machine snapshot. */
+// Match nightfox.nvim's lualine mode palette: bg0 text on base mode colors.
+const MODE_LABEL_STYLES = {
+  INSERT: "\x1b[1;38;2;19;26;36;48;2;129;178;154m",
+  NORMAL: "\x1b[1;38;2;19;26;36;48;2;113;156;214m",
+  OPERATOR: "\x1b[1;38;2;19;26;36;48;2;219;192;116m",
+  VISUAL: "\x1b[1;38;2;19;26;36;48;2;157;121;214m",
+  "VISUAL LINE": "\x1b[1;38;2;19;26;36;48;2;157;121;214m",
+  REPLACE: "\x1b[1;38;2;19;26;36;48;2;201;79;109m",
+} as const;
+
+const ANSI_RESET = "\x1b[0m";
+
+function highlightVimModeLabel(
+  label: ReturnType<typeof getVimModeLabel>,
+): string {
+  return `${MODE_LABEL_STYLES[label]} ${label} ${ANSI_RESET}`;
+}
+
 function vimCursorStyle(snapshot: VimSnapshot): VimCursorStyle {
   if (
     isVimOperatorMode(snapshot) ||

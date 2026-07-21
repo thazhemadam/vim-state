@@ -1334,7 +1334,7 @@ test("VimPiEditor joins lines in Visual selections", () => {
 test("VimPiEditor exits Visual mode without changing the buffer", () => {
   const editor = createEditorWithText("abcdef");
   play(editor, [ESC, "0", "v", "l"]);
-  assert.equal(getVimModeLabel(editor.vimSnapshot), "-- VISUAL --");
+  assert.equal(getVimModeLabel(editor.vimSnapshot), "VISUAL");
 
   editor.handleInput(ESC);
   assertEditor(editor, {
@@ -1349,11 +1349,11 @@ test("VimPiEditor exits Visual mode without changing the buffer", () => {
 test("VimPiEditor renders Visual mode labels", () => {
   const editor = createEditorWithText("one\ntwo");
   play(editor, [ESC, "g", "g", "v"]);
-  assert.match(editor.render(40).at(-1) ?? "", /-- VISUAL --$/);
+  assertRenderedMode(editor, "VISUAL");
 
   editor.handleInput(ESC);
   editor.handleInput("V");
-  assert.match(editor.render(40).at(-1) ?? "", /-- VISUAL LINE --$/);
+  assertRenderedMode(editor, "VISUAL LINE");
 });
 
 test("VimPiEditor highlights Visual selections", () => {
@@ -1431,7 +1431,7 @@ test("VimPiEditor applies replace commands", () => {
     cursor: { line: 0, col: 2 },
     mode: "replace",
   });
-  assert.match(replaceEditor.render(40).at(-1) ?? "", /-- REPLACE --$/);
+  assertRenderedMode(replaceEditor, "REPLACE");
 
   replaceEditor.handleInput(ESC);
   assertEditor(replaceEditor, {
@@ -1593,7 +1593,7 @@ test("VimPiEditor delegates insert input and ignores unmapped normal printable k
     cursor: { line: 0, col: 3 },
     mode: "insert",
   });
-  assert.match(editor.render(40).at(-1) ?? "", /-- INSERT --$/);
+  assertRenderedMode(editor, "INSERT");
 });
 
 test("VimPiEditor passes only bare Enter through in Normal mode", () => {
@@ -1658,7 +1658,7 @@ test("VimPiEditor passes only bare Enter through in Visual mode", () => {
   play(editor, ["a", "b", "c", ESC, "v", "h", "\r"]);
 
   assert.deepEqual(submitted, ["abc"]);
-  assert.equal(getVimModeLabel(editor.vimSnapshot), "-- NORMAL --");
+  assert.equal(getVimModeLabel(editor.vimSnapshot), "NORMAL");
   assertEditor(editor, {
     text: "",
     cursor: { line: 0, col: 0 },
@@ -1674,7 +1674,7 @@ test("VimPiEditor passes only bare Enter through in Visual mode", () => {
     cursor: { line: 0, col: 1 },
     mode: "normal",
   });
-  assert.equal(getVimModeLabel(modified.vimSnapshot), "-- VISUAL --");
+  assert.equal(getVimModeLabel(modified.vimSnapshot), "VISUAL");
   assert.deepEqual(submitted, ["abc"]);
 });
 
@@ -1705,10 +1705,13 @@ test("VimPiEditor passes configured app shortcuts through in Normal mode", () =>
   });
 });
 
-test("VimPiEditor renders operator-pending mode label", () => {
+test("VimPiEditor renders Normal and operator-pending mode labels", () => {
   const editor = createEditor();
-  play(editor, ["a", "b", "c", ESC, "d"]);
-  assert.match(editor.render(40).at(-1) ?? "", /-- OPERATOR --$/);
+  play(editor, ["a", "b", "c", ESC]);
+  assertRenderedMode(editor, "NORMAL");
+
+  editor.handleInput("d");
+  assertRenderedMode(editor, "OPERATOR");
 });
 
 test("VimPiEditor uses hardware cursors for insert, replace, and operator-pending", () => {
@@ -1770,8 +1773,37 @@ test("VimPiEditor uses hardware cursors for insert, replace, and operator-pendin
     "\x1b[2 q",
     "\x1b[4 q",
   ]);
-  assert.match(editor.render(40).at(-1) ?? "", /-- OPERATOR --$/);
+  assertRenderedMode(editor, "OPERATOR");
 });
+
+const EXPECTED_MODE_LABEL_STYLES = {
+  INSERT: "\u001b[1;38;2;19;26;36;48;2;129;178;154m",
+  NORMAL: "\u001b[1;38;2;19;26;36;48;2;113;156;214m",
+  OPERATOR: "\u001b[1;38;2;19;26;36;48;2;219;192;116m",
+  VISUAL: "\u001b[1;38;2;19;26;36;48;2;157;121;214m",
+  "VISUAL LINE": "\u001b[1;38;2;19;26;36;48;2;157;121;214m",
+  REPLACE: "\u001b[1;38;2;19;26;36;48;2;201;79;109m",
+} as const;
+
+function assertRenderedMode(
+  editor: VimPiEditor,
+  expectedLabel: ReturnType<typeof getVimModeLabel>,
+): void {
+  const line = editor.render(40).at(-1) ?? "";
+  assert.equal(stripAnsi(line).endsWith(` ${expectedLabel} `), true);
+  assert.equal(
+    line.endsWith(
+      `${EXPECTED_MODE_LABEL_STYLES[expectedLabel]} ${expectedLabel} \u001b[0m`,
+    ),
+    true,
+  );
+}
+
+const ANSI_SGR_PATTERN = new RegExp("\\u001b\\[[0-9;]*m", "g");
+
+function stripAnsi(value: string): string {
+  return value.replace(ANSI_SGR_PATTERN, "");
+}
 
 function assertEditor(
   editor: VimPiEditor,
