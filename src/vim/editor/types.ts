@@ -125,6 +125,7 @@ export interface VimEditorApi extends Pick<VimEditorHost, "getCursor"> {
   replaceCharUnderCursor(char: string): void;
   toggleCase(count?: number): void;
   undo(): void;
+  redo(): void;
   clampCursorColumn(): void;
 }
 
@@ -137,6 +138,8 @@ export interface VimEditorHost {
   getLines(): string[];
   /** Restore the most recent host undo point, when supported. */
   undoEditor?(): void;
+  /** Restore the most recent host redo point, when supported. */
+  redoEditor?(): void;
   /** Forward raw input/control bytes to the underlying host editor. */
   sendInputToEditor(data: string): void;
 }

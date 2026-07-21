@@ -7,6 +7,7 @@ class FakeHost implements VimEditorHost {
   inputs: string[] = [];
   registers: string[] = [];
   undoCount = 0;
+  redoCount = 0;
   lines = ["abc"];
   cursor = { line: 0, col: 1 };
 
@@ -20,6 +21,10 @@ class FakeHost implements VimEditorHost {
 
   undoEditor(): void {
     this.undoCount += 1;
+  }
+
+  redoEditor(): void {
+    this.redoCount += 1;
   }
 
   sendInputToEditor(data: string): void {
@@ -78,4 +83,12 @@ test("VimEditor mixin delegates undo to the host editor", () => {
   editor.vimEditor.undo();
 
   assert.equal(editor.undoCount, 1);
+});
+
+test("VimEditor mixin delegates redo to the host editor", () => {
+  const editor = new FakeVimEditor();
+
+  editor.vimEditor.redo();
+
+  assert.equal(editor.redoCount, 1);
 });

@@ -288,6 +288,12 @@ class VimEditorCore implements VimEditorApi {
     this.clampCursorColumn();
   }
 
+  /** Restore the latest host-provided redo point. */
+  redo(): void {
+    this.host.redoEditor?.();
+    this.clampCursorColumn();
+  }
+
   /** Move left until the Normal-mode cursor sits on a character, or column 0 for an empty line. */
   clampCursorColumn(): void {
     while (this.cursor.col > normalMaxColumn(this.currentLine)) {
