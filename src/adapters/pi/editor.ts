@@ -34,10 +34,24 @@ class PiEditorHost extends CustomEditor implements VimEditorHost {
   }
 }
 
+type EditorSnapshot = {
+  text: string;
+  cursor: VimPosition;
+};
+
+const MAX_REDO_SNAPSHOTS = 100;
+
 export class VimPiEditor extends VimEditor(PiEditorHost) {
   private readonly vim: ActorRefFrom<typeof vimMachine>;
   private cursorStyle: VimCursorStyle | undefined;
   private readonly appKeybindings: KeybindingsManager;
+  private readonly redoStack: EditorSnapshot[] = [];
+  /**
+   * Set while redo restores a snapshot through public setters. Public setters
+   * clear redo for ordinary edits; suppress that clearing for the nested
+   * restore so consecutive redo operations remain available.
+   */
+  private isApplyingRedoRestore = false;
 
   constructor(
     tui: TUI,
@@ -60,11 +74,48 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
     return this.vim.getSnapshot();
   }
 
+  setText(text: string): void {
+    const previousText = this.getText();
+    super.setText(text);
+    if (!this.isApplyingRedoRestore && this.getText() !== previousText) {
+      this.clearRedoStack();
+    }
+  }
+
+  insertTextAtCursor(text: string): void {
+    const previousText = this.getText();
+    super.insertTextAtCursor(text);
+    if (!this.isApplyingRedoRestore && this.getText() !== previousText) {
+      this.clearRedoStack();
+    }
+  }
+
   undoEditor(): void {
+    const before = this.createSnapshot();
     super.handleInput("\x1f"); // Ctrl--, Pi's default undo binding.
+    if (this.getText() !== before.text) {
+      this.pushRedoSnapshot(before);
+    }
+  }
+
+  redoEditor(): void {
+    const snapshot = this.redoStack.pop();
+    if (!snapshot) {
+      return;
+    }
+
+    this.isApplyingRedoRestore = true;
+    try {
+      this.setText(snapshot.text);
+      this.vimEditor.move(snapshot.cursor);
+      this.vimEditor.clampCursorColumn();
+    } finally {
+      this.isApplyingRedoRestore = false;
+    }
   }
 
   handleInput(data: string): void {
+    const previousText = this.getText();
     const previousSnapshot = this.vimSnapshot;
     const previousMode = getVimMode(previousSnapshot);
     const event = piInputToVimEvent(data);
@@ -106,6 +157,14 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
       }
     } else if (mode === "normal" && this.isAppShortcutInput(data)) {
       super.handleInput(data);
+    }
+
+    if (
+      !this.isApplyingRedoRestore &&
+      !this.shouldPreserveRedoStack(previousSnapshot, event.key) &&
+      this.getText() !== previousText
+    ) {
+      this.clearRedoStack();
     }
 
     this.tui.requestRender();
@@ -156,6 +215,42 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
       (this.getText().length === 0 &&
         this.appKeybindings.matches(data, "app.exit"))
     );
+  }
+
+  /** Capture the public editor state needed for adapter-local redo. */
+  private createSnapshot(): EditorSnapshot {
+    return {
+      text: this.getText(),
+      cursor: this.getCursor(),
+    };
+  }
+
+  /** Save a state that Pi just undid so Normal <C-r> can restore it. */
+  private pushRedoSnapshot(snapshot: EditorSnapshot): void {
+    this.redoStack.push(snapshot);
+    if (this.redoStack.length > MAX_REDO_SNAPSHOTS) {
+      this.redoStack.shift();
+    }
+  }
+
+  /**
+   * Native Pi redo clears redo from its private pushUndoSnapshot() hook.
+   * vim-pi cannot access that hook, so the adapter clears its shadow redo stack
+   * after any observed text-changing input except the two Normal-mode history
+   * commands that consume or produce redo entries. This deliberately does not
+   * preserve redo for Visual `u`, which is a lowercase text transform.
+   */
+  private shouldPreserveRedoStack(
+    previousSnapshot: VimSnapshot,
+    key: string,
+  ): boolean {
+    return (
+      previousSnapshot.value === "normal" && (key === "u" || key === "ctrl+r")
+    );
+  }
+
+  private clearRedoStack(): void {
+    this.redoStack.length = 0;
   }
 
   /** Sync terminal cursor shape with Vim mode, avoiding duplicate escape writes. */

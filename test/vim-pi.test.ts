@@ -12,7 +12,9 @@ const ESC = "\x1b";
 test("Pi keymap normalizes raw input into Vim keys", () => {
   assert.equal(normalizePiKey(ESC), "escape");
   assert.equal(normalizePiKey("i"), "i");
+  assert.equal(normalizePiKey("\x12"), "ctrl+r");
   assert.equal(normalizePiKey("\x1b[99;5u"), "ctrl+c");
+  assert.equal(normalizePiKey("\x1b[114;5u"), "ctrl+r");
 });
 
 test("Pi extension installs a Vim editor", () => {
@@ -356,6 +358,78 @@ test("VimPiEditor maps Normal u to Pi's default undo binding", () => {
 
   assertEditor(editor, {
     text: "abc",
+    cursor: { line: 0, col: 0 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor maps Normal Ctrl-r to adapter-local redo", () => {
+  const editor = createEditorWithText("abc");
+
+  play(editor, [ESC, "0", "x", "u", "\x12"]);
+
+  assertEditor(editor, {
+    text: "bc",
+    cursor: { line: 0, col: 0 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor redoes multiple Vim-triggered undos in order", () => {
+  const editor = createEditorWithText("abcd");
+
+  play(editor, [ESC, "0", "x", "x", "u", "u", "\x12", "\x12"]);
+
+  assertEditor(editor, {
+    text: "cd",
+    cursor: { line: 0, col: 0 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor lets Normal u undo an adapter-local redo", () => {
+  const editor = createEditorWithText("abc");
+
+  play(editor, [ESC, "0", "x", "u", "\x12", "u"]);
+
+  assertEditor(editor, {
+    text: "abc",
+    cursor: { line: 0, col: 0 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor clears redo after a new text edit", () => {
+  const editor = createEditorWithText("abc");
+
+  play(editor, [ESC, "0", "x", "u", "x", "\x12"]);
+
+  assertEditor(editor, {
+    text: "bc",
+    cursor: { line: 0, col: 0 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor restores the redo snapshot cursor", () => {
+  const editor = createEditorWithText("abcd");
+
+  play(editor, [ESC, "0", "l", "x", "u", "\x12"]);
+
+  assertEditor(editor, {
+    text: "acd",
+    cursor: { line: 0, col: 1 },
+    mode: "normal",
+  });
+});
+
+test("VimPiEditor treats Visual u as a new edit that clears redo", () => {
+  const editor = createEditorWithText("AbC");
+
+  play(editor, [ESC, "0", "x", "u", "v", "l", "u", "\x12"]);
+
+  assertEditor(editor, {
+    text: "abC",
     cursor: { line: 0, col: 0 },
     mode: "normal",
   });
