@@ -20,6 +20,7 @@ import type {
   Constructor,
   VimCaseTransform,
   VimEditorApi,
+  VimEditorConfiguration,
   VimEditorHost,
   VimEditorOptions,
   VimFindDirection,
@@ -39,6 +40,7 @@ import { firstNonBlankColumn, normalMaxColumn, toggleCase } from "./utils.js";
 export type {
   VimCaseTransform,
   VimEditorApi,
+  VimEditorConfiguration,
   VimEditorHost,
   VimEditorOptions,
   VimFindDirection,
@@ -58,7 +60,7 @@ export type {
 export { nounForKey } from "./utils.js";
 
 /** Reusable Vim operations composed around a host editor. */
-class VimEditorCore implements VimEditorApi {
+class VimEditorCore implements VimEditorApi, VimEditorConfiguration {
   private options: VimEditorOptions = {};
 
   constructor(private readonly host: VimEditorHost) {}

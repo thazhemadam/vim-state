@@ -129,6 +129,12 @@ export interface VimEditorApi extends Pick<VimEditorHost, "getCursor"> {
   clampCursorColumn(): void;
 }
 
+/** Configuration operations exposed by a Vim editor. */
+export interface VimEditorConfiguration {
+  /** Replace the options used by subsequent editor operations. */
+  setOptions(options: VimEditorOptions): void;
+}
+
 /** Constructor accepted by the TypeScript mixin class-expression pattern. */
 export type Constructor<T = {}> = new (...args: any[]) => T;
 
