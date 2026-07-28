@@ -5,6 +5,9 @@
   "license": "AGPL-3.0-only",
   "description": "Reusable Vim modal state machine with a Pi editor adapter.",
   "type": "module",
+  "workspaces": [
+    "packages/vim-state"
+  ],
   "keywords": [
     "pi-package",
     "pi-extension",
@@ -19,11 +22,12 @@
     ]
   },
   "scripts": {
-    "check": "tsc --noEmit && oxlint",
+    "build": "npm run build --workspace vim-state",
+    "check": "npm run build && tsc --noEmit && oxlint",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
-    "test": "tsx --test test/**/*.test.ts",
-    "dev:pi": "VIM_PI_PREFILL='Lorem ipsum dolor sit amet, consectetur adipiscing elit.\\nSed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' PI_CODING_AGENT_DIR=$PWD/.pi-dev/agent PI_CODING_AGENT_SESSION_DIR=$PWD/.pi-dev/sessions pi --no-extensions -e .",
+    "test": "npm run build && npm run test --workspace vim-state && tsx --test test/**/*.test.ts",
+    "dev:pi": "npm run build && VIM_PI_PREFILL='Lorem ipsum dolor sit amet, consectetur adipiscing elit.\\nSed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' PI_CODING_AGENT_DIR=$PWD/.pi-dev/agent PI_CODING_AGENT_SESSION_DIR=$PWD/.pi-dev/sessions pi --no-extensions -e .",
     "dev:pi:clean": "rm -rf .pi-dev",
     "format": "prettier --write ."
   },
@@ -32,6 +36,7 @@
     "@earendil-works/pi-tui": "*"
   },
   "dependencies": {
+    "vim-state": "0.1.0",
     "xstate": "5.32.1"
   },
   "devDependencies": {

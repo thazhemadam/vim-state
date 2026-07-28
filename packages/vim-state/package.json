@@ -1,0 +1,36 @@
+{
+  "name": "vim-state",
+  "version": "0.1.0",
+  "license": "AGPL-3.0-only",
+  "description": "Reusable Vim modal state machine and host-neutral editor semantics.",
+  "type": "module",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "check": "tsc --noEmit && oxlint",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "prepack": "npm run build",
+    "test": "tsx --test test/**/*.test.ts"
+  },
+  "dependencies": {
+    "xstate": "5.32.1"
+  },
+  "devDependencies": {
+    "oxlint": "^1.70.0",
+    "tsx": "^4.22.4",
+    "typescript": "^5.9.3"
+  }
+}

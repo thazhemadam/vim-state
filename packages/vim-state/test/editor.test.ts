@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { VimEditor, type VimEditorHost } from "../src/vim/editor.js";
+import { VimEditor, type VimEditorHost } from "../src/editor.js";
 
 class FakeHost implements VimEditorHost {
   inputs: string[] = [];

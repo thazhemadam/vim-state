@@ -5,7 +5,7 @@ import vimPiExtension, { VimPiEditor } from "../src/index.js";
 import { matchesKey } from "@earendil-works/pi-tui";
 
 import { normalizePiKey } from "../src/integrations/pi-vim/keymap.js";
-import { getVimMode, getVimModeLabel } from "../src/vim/selectors.js";
+import { getVimMode, getVimModeLabel } from "vim-state";
 
 const ESC = "\x1b";
 

@@ -1,6 +1,6 @@
 import { decodeKittyPrintable, parseKey } from "@earendil-works/pi-tui";
 
-import type { VimEvent } from "../../vim/events.js";
+import type { VimEvent } from "vim-state";
 
 export function piInputToVimEvent(data: string): VimEvent {
   return { type: "KEY", key: normalizePiKey(data) };

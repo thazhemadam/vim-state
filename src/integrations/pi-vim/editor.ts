@@ -13,20 +13,19 @@ import {
 } from "@earendil-works/pi-tui";
 
 import {
-  VimEditor,
-  type VimEditorHost,
-  type VimEditorOptions,
-  type VimPosition,
-  type VimVisualSelection,
-} from "../../vim/editor.js";
-import { LinearHistory } from "../../vim/history.js";
-import { vimMachine, type VimSnapshot } from "../../vim/machine.js";
-import {
   getVimMode,
   getVimModeLabel,
   isVimOperatorMode,
   isVimVisualMode,
-} from "../../vim/selectors.js";
+  LinearHistory,
+  VimEditor,
+  type VimEditorHost,
+  type VimEditorOptions,
+  type VimPosition,
+  type VimSnapshot,
+  type VimVisualSelection,
+  vimMachine,
+} from "vim-state";
 import { isPrintablePiInput, piInputToVimEvent } from "./keymap.js";
 
 class PiEditorHost extends CustomEditor implements VimEditorHost {
