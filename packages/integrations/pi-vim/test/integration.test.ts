@@ -1730,6 +1730,32 @@ test("VimPiEditor renders Normal and operator-pending mode labels", () => {
   assertRenderedMode(editor, "OPERATOR");
 });
 
+test("VimPiEditor restores hardware cursor visibility after Pi reload resets it", () => {
+  let hardwareCursorVisible = false;
+  const fakeTui = {
+    terminal: { rows: 24, write: () => {} },
+    requestRender: () => {},
+    setShowHardwareCursor: (enabled: boolean) => {
+      hardwareCursorVisible = enabled;
+    },
+  };
+  const fakeTheme = { borderColor: (value: string) => value, selectList: {} };
+  const fakeKeybindings = { matches: () => false };
+  const editor = new VimPiEditor(
+    fakeTui as never,
+    fakeTheme as never,
+    fakeKeybindings as never,
+  );
+
+  assert.equal(hardwareCursorVisible, true);
+  fakeTui.setShowHardwareCursor(false);
+  assert.equal(hardwareCursorVisible, false);
+
+  editor.render(40);
+
+  assert.equal(hardwareCursorVisible, true);
+});
+
 test("VimPiEditor uses hardware cursors for insert, replace, and operator-pending", () => {
   const writes: string[] = [];
   const editor = createEditor(writes);

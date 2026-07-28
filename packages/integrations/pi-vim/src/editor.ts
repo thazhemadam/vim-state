@@ -69,7 +69,7 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
     }).start();
     this.appKeybindings = keybindings;
     this.activeInsertSnapshot = this.createSnapshot();
-    this.tui.setShowHardwareCursor(true);
+    this.ensureHardwareCursorVisible();
     this.syncCursorStyle();
   }
 
@@ -194,6 +194,9 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
   }
 
   render(width: number): string[] {
+    // Pi reapplies its global cursor setting after extension session_start on
+    // /reload. Reassert ownership while this hardware-cursor editor is active.
+    this.ensureHardwareCursorVisible();
     const lines = super.render(width);
     if (lines.length === 0) {
       return lines;
@@ -392,6 +395,11 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
     this.activeInsertSnapshot = isInsertHistorySession(this.vimSnapshot)
       ? this.createSnapshot()
       : undefined;
+  }
+
+  /** Keep the hardware cursor visible while this editor owns cursor rendering. */
+  private ensureHardwareCursorVisible(): void {
+    this.tui.setShowHardwareCursor(true);
   }
 
   /** Sync terminal cursor shape with Vim mode, avoiding duplicate escape writes. */
