@@ -813,9 +813,16 @@ function transformCaseText(text: string, transform: VimCaseTransform): string {
   }
 }
 
+/** Constructor for host editor instances that expose a composed Vim editor. */
+type VimEditorMixinConstructor = Constructor<{
+  /** Vim editor exposed by the composed host instance. */
+  readonly vimEditor: VimEditor;
+}>;
+
+/** Return a host editor subclass with reusable Vim editing operations. */
 export function VimEditor<TBase extends Constructor<VimEditorHost>>(
   Base: TBase,
-) {
+): TBase & VimEditorMixinConstructor {
   return class VimEditor extends Base {
     readonly vimEditor = new VimEditorCore(this);
   };
