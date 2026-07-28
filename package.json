@@ -1,48 +1,37 @@
 {
-  "name": "vim-pi",
+  "name": "vim-state-monorepo",
   "version": "0.1.0",
   "private": true,
   "license": "AGPL-3.0-only",
-  "description": "Reusable Vim modal state machine with a Pi editor adapter.",
+  "description": "Vim state engine and host integrations.",
   "type": "module",
   "workspaces": [
-    "packages/vim-state"
-  ],
-  "keywords": [
-    "pi-package",
-    "pi-extension",
-    "vim",
-    "modal-editing",
-    "state-machine",
-    "xstate"
+    "packages/vim-state",
+    "packages/integrations/*"
   ],
   "pi": {
     "extensions": [
-      "./src/index.ts"
+      "./packages/integrations/pi-vim/src/index.ts"
     ]
   },
   "scripts": {
     "build": "npm run build --workspace vim-state",
-    "check": "npm run build && tsc --noEmit && oxlint",
-    "lint": "oxlint",
-    "lint:fix": "oxlint --fix",
-    "test": "npm run build && npm run test --workspace vim-state && tsx --test test/**/*.test.ts",
+    "check": "npm run build && npm run check --workspaces --if-present",
+    "clean": "rm -rf packages/vim-state/dist",
+    "lint": "npm run lint --workspaces --if-present",
+    "lint:fix": "npm run lint:fix --workspaces --if-present",
+    "test": "npm run build && npm run test --workspaces --if-present",
+    "prepare": "npm run build",
     "dev:pi": "npm run build && VIM_PI_PREFILL='Lorem ipsum dolor sit amet, consectetur adipiscing elit.\\nSed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' PI_CODING_AGENT_DIR=$PWD/.pi-dev/agent PI_CODING_AGENT_SESSION_DIR=$PWD/.pi-dev/sessions pi --no-extensions -e .",
     "dev:pi:clean": "rm -rf .pi-dev",
     "format": "prettier --write ."
   },
-  "peerDependencies": {
-    "@earendil-works/pi-coding-agent": "*",
-    "@earendil-works/pi-tui": "*"
-  },
   "dependencies": {
-    "vim-state": "0.1.0",
-    "xstate": "5.32.1"
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
     "oxlint": "^1.70.0",
     "prettier": "^3.8.4",
-    "tsx": "^4.22.4",
-    "typescript": "^5.9.3"
+    "tsx": "^4.22.4"
   }
 }

@@ -1,0 +1,38 @@
+{
+  "name": "pi-vim",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "description": "Vim-style modal editing integration for Pi.",
+  "type": "module",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "vim",
+    "modal-editing"
+  ],
+  "pi": {
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
+  "scripts": {
+    "check": "tsc --noEmit && oxlint",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "test": "tsx --test test/**/*.test.ts"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "dependencies": {
+    "vim-state": "0.1.0",
+    "xstate": "5.32.1"
+  },
+  "devDependencies": {
+    "oxlint": "^1.70.0",
+    "tsx": "^4.22.4",
+    "typescript": "^5.9.3"
+  }
+}

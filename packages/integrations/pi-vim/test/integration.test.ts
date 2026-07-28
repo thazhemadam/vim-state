@@ -4,7 +4,7 @@ import test from "node:test";
 import vimPiExtension, { VimPiEditor } from "../src/index.js";
 import { matchesKey } from "@earendil-works/pi-tui";
 
-import { normalizePiKey } from "../src/integrations/pi-vim/keymap.js";
+import { normalizePiKey } from "../src/keymap.js";
 import { getVimMode, getVimModeLabel } from "vim-state";
 
 const ESC = "\x1b";
