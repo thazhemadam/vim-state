@@ -1645,7 +1645,7 @@ test("VimPiEditor passes bare up/down through in Normal mode for prompt history"
   editor.handleInput("\x1b[B");
   assertEditor(editor, {
     text: "second",
-    cursor: { line: 0, col: 6 },
+    cursor: { line: 0, col: 5 },
     mode: "normal",
   });
 });
