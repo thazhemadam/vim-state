@@ -1,10 +1,10 @@
-export { default } from "./adapters/pi/extension.js";
-export { VimPiEditor } from "./adapters/pi/editor.js";
+export { default } from "./adapters/pi-vim/extension.js";
+export { VimPiEditor } from "./adapters/pi-vim/editor.js";
 export {
   isPrintablePiInput,
   normalizePiKey,
   piInputToVimEvent,
-} from "./adapters/pi/keymap.js";
+} from "./adapters/pi-vim/keymap.js";
 
 export * from "./vim/context.js";
 export * from "./vim/editor.js";
