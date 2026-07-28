@@ -2,6 +2,7 @@
   "name": "vim-pi",
   "version": "0.1.0",
   "private": true,
+  "license": "AGPL-3.0-only",
   "description": "Reusable Vim modal state machine with a Pi editor adapter.",
   "type": "module",
   "keywords": [
