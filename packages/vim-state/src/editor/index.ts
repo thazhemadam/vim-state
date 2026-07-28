@@ -59,8 +59,11 @@ export type {
 
 export { nounForKey } from "./utils.js";
 
+/** Editing and configuration operations exposed by a composed Vim editor. */
+export interface VimEditor extends VimEditorApi, VimEditorConfiguration {}
+
 /** Reusable Vim operations composed around a host editor. */
-class VimEditorCore implements VimEditorApi, VimEditorConfiguration {
+class VimEditorCore implements VimEditor {
   private options: VimEditorOptions = {};
 
   constructor(private readonly host: VimEditorHost) {}
