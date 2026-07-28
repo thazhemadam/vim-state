@@ -11,15 +11,30 @@
     "vim",
     "modal-editing"
   ],
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "pi": {
     "extensions": [
-      "./src/index.ts"
+      "./dist/index.js"
     ]
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "check": "tsc --noEmit && oxlint",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
+    "prepack": "npm run build",
     "test": "tsx --test test/**/*.test.ts"
   },
   "peerDependencies": {

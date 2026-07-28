@@ -11,13 +11,13 @@
   ],
   "pi": {
     "extensions": [
-      "./packages/integrations/pi-vim/src/index.ts"
+      "./packages/integrations/pi-vim/dist/index.js"
     ]
   },
   "scripts": {
-    "build": "npm run build --workspace vim-state",
+    "build": "npm run build --workspace vim-state && npm run build --workspace pi-vim",
     "check": "npm run build && npm run check --workspaces --if-present",
-    "clean": "rm -rf packages/vim-state/dist",
+    "clean": "rm -rf packages/vim-state/dist packages/integrations/pi-vim/dist",
     "lint": "npm run lint --workspaces --if-present",
     "lint:fix": "npm run lint:fix --workspaces --if-present",
     "test": "npm run build && npm run test --workspaces --if-present",
