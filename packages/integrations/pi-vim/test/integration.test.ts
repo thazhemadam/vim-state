@@ -1161,6 +1161,22 @@ test("VimPiEditor applies word text objects", () => {
       mode: "normal" as const,
       register: { text: "one ", type: "charwise" as const },
     },
+    {
+      name: "diw on the final word clamps the Normal cursor onto the preceding space",
+      keys: [ESC, "b", "d", "i", "w"],
+      textAfter: "one ",
+      cursor: { line: 0, col: 3 },
+      mode: "normal" as const,
+      register: { text: "two", type: "charwise" as const },
+    },
+    {
+      name: "ciw on the final word keeps the Insert caret after the preceding space",
+      keys: [ESC, "b", "c", "i", "w"],
+      textAfter: "one ",
+      cursor: { line: 0, col: 4 },
+      mode: "insert" as const,
+      register: { text: "two", type: "charwise" as const },
+    },
   ]) {
     const editor = createEditorWithText("one two");
     play(editor, spec.keys);

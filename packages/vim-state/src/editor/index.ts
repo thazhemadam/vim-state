@@ -184,8 +184,11 @@ class VimEditorCore implements VimEditor {
 
   /** Apply a supported operator noun as a change and return the changed text. */
   change(target: VimOperatorTarget, count = 1): VimRegister | undefined {
-    return this.applyOperator(target, count, (range) =>
-      this.applyChangeRange(range),
+    return this.applyOperator(
+      target,
+      count,
+      (range) => this.applyChangeRange(range),
+      { emitRegisterWrite: true, clampCursor: false },
     );
   }
 
@@ -215,7 +218,7 @@ class VimEditorCore implements VimEditor {
         }
         return replaced;
       },
-      emitRegisterWrite,
+      { emitRegisterWrite, clampCursor: true },
     );
   }
 
@@ -609,7 +612,10 @@ class VimEditorCore implements VimEditor {
     target: VimOperatorTarget,
     count: number,
     applyRange: (range: VimRange) => VimRegister,
-    emitRegisterWrite = true,
+    options: { emitRegisterWrite: boolean; clampCursor: boolean } = {
+      emitRegisterWrite: true,
+      clampCursor: true,
+    },
   ): VimRegister | undefined {
     const range = this.resolveOperatorRange(target, count);
     if (!range) {
@@ -617,11 +623,11 @@ class VimEditorCore implements VimEditor {
     }
 
     const register = applyRange(range);
-    if (target !== "left") {
+    if (options.clampCursor && target !== "left") {
       this.clampCursorColumn();
     }
 
-    if (emitRegisterWrite) {
+    if (options.emitRegisterWrite) {
       this.emitUnnamedRegisterWrite(register);
     }
 
