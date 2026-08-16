@@ -5,6 +5,7 @@
   "license": "AGPL-3.0-only",
   "description": "Vim state engine and host integrations.",
   "type": "module",
+  "packageManager": "npm@11.16.0",
   "workspaces": [
     "packages/vim-state",
     "packages/integrations/*"
@@ -15,18 +16,19 @@
     ]
   },
   "scripts": {
-    "build": "npm run build --workspace @thazhemadam/vim-state && npm run build --workspace @thazhemadam/pi-vim",
-    "check": "npm run build && npm run check --workspaces --if-present",
+    "build": "turbo run build",
+    "check": "turbo run check",
     "clean": "rm -rf packages/vim-state/dist packages/integrations/pi-vim/dist",
-    "lint": "npm --prefix packages/vim-state run lint && npm --prefix packages/integrations/pi-vim run lint",
-    "lint:fix": "npm --prefix packages/vim-state run lint:fix && npm --prefix packages/integrations/pi-vim run lint:fix",
-    "test": "npm run build && npm --prefix packages/vim-state run test && npm --prefix packages/integrations/pi-vim run test",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "test": "turbo run test",
     "prepare": "npm run build",
     "dev:pi": "npm run build && VIM_PI_PREFILL='Lorem ipsum dolor sit amet, consectetur adipiscing elit.\\nSed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' PI_CODING_AGENT_SESSION_DIR=$PWD/.pi-dev/sessions pi --no-extensions -e .",
     "dev:pi:clean": "rm -rf .pi-dev",
     "format": "prettier --write ."
   },
   "dependencies": {
+    "turbo": "2.10.9",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
