@@ -1,0 +1,24 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      "description": "Update the supported Pi range as one reviewed change",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["peerDependencies"],
+      "matchPackageNames": [
+        "@earendil-works/pi-coding-agent",
+        "@earendil-works/pi-tui"
+      ],
+      "groupName": "Pi compatibility",
+      "groupSlug": "pi-compatibility",
+      "minimumGroupSize": 2,
+      "rangeStrategy": "widen",
+      "automerge": false,
+      "prBodyNotes": [
+        "Run `npm run dev:pi` and complete a manual editor smoke test.",
+        "Add a patch Changeset for `@thazhemadam/pi-vim` before merging."
+      ]
+    }
+  ]
+}
