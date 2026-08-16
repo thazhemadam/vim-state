@@ -1387,6 +1387,72 @@ test("VimPiEditor highlights Visual selections", () => {
   const rendered = linewise.render(40);
   assert.ok(rendered[1]?.includes("\x1b[7mone\x1b[0m"));
   assert.ok(rendered[2]?.includes("\x1b[7mtwo\x1b[0m"));
+
+  const wrapped = createEditorWithText("abcdefghijklmnopqrstuvwxyz");
+  play(wrapped, [ESC, "0", "v", "$"]);
+  const wrappedRender = wrapped.render(12);
+  assert.ok(wrappedRender[1]?.includes("\x1b[7mabcdefghijk\x1b[0m"));
+  assert.ok(wrappedRender[2]?.includes("\x1b[7mlmnopqrstuv\x1b[0m"));
+  assert.ok(wrappedRender[3]?.includes("\x1b[7mwxyz\x1b[0m"));
+
+  const wrappedLinewise = createEditorWithText("abcdefghijklmnopqrstuvwxyz");
+  play(wrappedLinewise, [ESC, "V"]);
+  const wrappedLinewiseRender = wrappedLinewise.render(12);
+  assert.ok(wrappedLinewiseRender[1]?.includes("\x1b[7mabcdefghijk\x1b[0m"));
+  assert.ok(wrappedLinewiseRender[2]?.includes("\x1b[7mlmnopqrstuv\x1b[0m"));
+  assert.ok(wrappedLinewiseRender[3]?.includes("\x1b[7mwxyz\x1b[0m"));
+
+  const wideCharacters = createEditorWithText("界界界");
+  play(wideCharacters, [ESC, "0", "v", "$"]);
+  const wideRender = wideCharacters.render(4);
+  assert.ok(wideRender[1]?.includes("\x1b[7m界\x1b[0m"));
+  assert.ok(wideRender[2]?.includes("\x1b[7m界\x1b[0m"));
+  assert.ok(wideRender[3]?.includes("\x1b[7m界\x1b[0m"));
+
+  for (const keys of [
+    [ESC, "0", "5", "l", "v", "9", "l"],
+    [ESC, "0", "1", "4", "l", "v", "9", "h"],
+  ]) {
+    const partial = createEditorWithText("abcdefghijklmnopqrstuvwxyz");
+    partial.setPaddingX(1);
+    play(partial, keys);
+    const partialRender = partial.render(12);
+    assert.ok(partialRender[1]?.includes("abcde\x1b[7mfghij\x1b[0m"));
+    assert.ok(partialRender[2]?.includes("\x1b[7mklmno\x1b[0mpqrst"));
+  }
+});
+
+test("VimPiEditor rejects incompatible Pi visual layout internals", () => {
+  const editor = createEditorWithText("abcdef");
+  play(editor, [ESC, "0", "v", "$"]);
+  const layoutInternals = editor as unknown as {
+    layoutText: (width: number) => unknown[];
+  };
+  const originalLayoutText = layoutInternals.layoutText.bind(editor);
+  let layoutCalls = 0;
+  Object.defineProperty(editor, "layoutText", {
+    value: (width: number) => {
+      layoutCalls += 1;
+      return layoutCalls === 1 ? originalLayoutText(width) : [{}];
+    },
+  });
+
+  assert.throws(
+    () => editor.render(12),
+    /vim-pi cannot map this Pi editor's wrapped layout/,
+  );
+});
+
+test("VimPiEditor highlights only visible wrapped rows while scrolled", () => {
+  const editor = createEditorWithText("a".repeat(99));
+  play(editor, [ESC, "0", "v", "$"]);
+
+  const rendered = editor.render(12);
+  assert.match(stripAnsi(rendered[0] ?? ""), /↑ 2/);
+  for (const line of rendered.slice(1, 8)) {
+    assert.ok(line.includes(`\x1b[7m${"a".repeat(11)}\x1b[0m`));
+  }
+  assert.equal(rendered[8]?.includes("\x1b[7m"), false);
 });
 
 test("VimPiEditor applies Normal-mode insert-entry commands", () => {

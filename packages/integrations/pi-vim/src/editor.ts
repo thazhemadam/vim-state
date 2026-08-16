@@ -211,11 +211,11 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
 
     if (isVimVisualMode(snapshot) && snapshot.context.visual) {
       highlightVisualSelection(
+        this,
         lines,
-        this.getLines(),
         snapshot.context.visual,
-        this.getCursor(),
-        this.getPaddingX(),
+        width,
+        this.tui.terminal.rows,
       );
     }
 
