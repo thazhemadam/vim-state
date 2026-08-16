@@ -34,6 +34,7 @@
     "typescript": "^5.9.3"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "1.0.0",
     "@changesets/cli": "3.0.0",
     "oxlint": "^1.70.0",
     "prettier": "^3.8.4",
