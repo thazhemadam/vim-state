@@ -1,7 +1,7 @@
 {
   "name": "@thazhemadam/vim-state",
   "version": "0.1.0",
-  "license": "AGPL-3.0-only",
+  "license": "LGPL-3.0-only",
   "description": "Reusable Vim modal state machine and host-neutral editor semantics.",
   "type": "module",
   "repository": {
@@ -19,6 +19,7 @@
   "files": [
     "dist",
     "LICENSE",
+    "LICENSE.GPL",
     "README.md"
   ],
   "main": "./dist/index.js",

@@ -3,16 +3,22 @@ import { spawnSync } from "node:child_process";
 const packages = [
   {
     name: "@thazhemadam/vim-state",
-    required: ["dist/index.d.ts", "dist/index.js"],
+    required: ["LICENSE", "LICENSE.GPL", "dist/index.d.ts", "dist/index.js"],
   },
   {
     name: "@thazhemadam/pi-vim",
-    required: ["dist/index.d.ts", "dist/index.js", "dist/extension.js"],
+    required: [
+      "LICENSE",
+      "LICENSE.GPL",
+      "dist/index.d.ts",
+      "dist/index.js",
+      "dist/extension.js",
+    ],
   },
 ];
 
 const allowedFile =
-  /^(?:LICENSE|README\.md|package\.json|dist\/.+\.(?:d\.ts|js))$/;
+  /^(?:LICENSE(?:\.GPL)?|README\.md|package\.json|dist\/.+\.(?:d\.ts|js))$/;
 
 for (const packageSpec of packages) {
   const result = spawnSync(

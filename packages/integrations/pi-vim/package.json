@@ -1,7 +1,7 @@
 {
   "name": "@thazhemadam/pi-vim",
   "version": "0.1.0",
-  "license": "AGPL-3.0-only",
+  "license": "LGPL-3.0-only",
   "description": "Vim-style modal editing integration for Pi.",
   "type": "module",
   "repository": {
@@ -25,6 +25,7 @@
   "files": [
     "dist",
     "LICENSE",
+    "LICENSE.GPL",
     "README.md"
   ],
   "main": "./dist/index.js",
