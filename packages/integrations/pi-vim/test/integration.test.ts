@@ -17,9 +17,18 @@ test("Pi keymap normalizes raw input into Vim keys", () => {
   assert.equal(normalizePiKey("\x1b[114;5u"), "ctrl+r");
 });
 
-test("Pi extension installs a Vim editor", () => {
+test("Pi extension installs a Vim editor", async () => {
   let installedFactory: unknown;
   let registeredFlag: unknown;
+  let statusCommand:
+    | {
+        name: string;
+        handler: (
+          args: string,
+          ctx: { ui: { notify: (message: string, level: string) => void } },
+        ) => Promise<void>;
+      }
+    | undefined;
   vimPiExtension({
     getFlag: () => false,
     on: (event: string, handler: unknown) => {
@@ -32,7 +41,14 @@ test("Pi extension installs a Vim editor", () => {
         });
       }
     },
-    registerCommand: () => {},
+    registerCommand: (name: string, command: { handler: unknown }) => {
+      statusCommand = {
+        name,
+        handler: command.handler as NonNullable<
+          typeof statusCommand
+        >["handler"],
+      };
+    },
     registerFlag: (name: string) => {
       registeredFlag = name;
     },
@@ -40,6 +56,17 @@ test("Pi extension installs a Vim editor", () => {
 
   assert.equal(registeredFlag, "pi-vim-system-clipboard");
   assert.equal(typeof installedFactory, "function");
+  assert.equal(statusCommand?.name, "pi-vim-status");
+
+  const notifications: Array<{ message: string; level: string }> = [];
+  await statusCommand?.handler("", {
+    ui: {
+      notify: (message, level) => notifications.push({ message, level }),
+    },
+  });
+  assert.deepEqual(notifications, [
+    { message: "pi-vim extension loaded.", level: "info" },
+  ]);
 });
 
 test("VimPiEditor tracks mode and cursor across insert/normal transitions", () => {

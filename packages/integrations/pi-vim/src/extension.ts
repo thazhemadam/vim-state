@@ -41,10 +41,10 @@ export default function vimPiExtension(pi: ExtensionAPI): void {
     editor?.restoreCursorStyle();
   });
 
-  pi.registerCommand("vim-pi-status", {
-    description: "Show vim-pi extension status",
+  pi.registerCommand("pi-vim-status", {
+    description: "Show pi-vim extension status",
     handler: async (_args, ctx) => {
-      ctx.ui.notify("vim-pi modal editor loaded.", "info");
+      ctx.ui.notify("pi-vim extension loaded.", "info");
     },
   });
 }
