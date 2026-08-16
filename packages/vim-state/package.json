@@ -1,12 +1,25 @@
 {
-  "name": "vim-state",
+  "name": "@thazhemadam/vim-state",
   "version": "0.1.0",
-  "license": "AGPL-3.0-only",
+  "license": "LGPL-3.0-only",
   "description": "Reusable Vim modal state machine and host-neutral editor semantics.",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thazhemadam/vim-state.git",
+    "directory": "packages/vim-state"
+  },
+  "homepage": "https://github.com/thazhemadam/vim-state/tree/main/packages/vim-state#readme",
+  "bugs": {
+    "url": "https://github.com/thazhemadam/vim-state/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist",
     "LICENSE",
+    "LICENSE.GPL",
     "README.md"
   ],
   "main": "./dist/index.js",

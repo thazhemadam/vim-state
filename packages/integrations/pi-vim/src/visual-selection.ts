@@ -1,7 +1,7 @@
 import type { CustomEditor } from "@earendil-works/pi-coding-agent";
 import { CURSOR_MARKER, visibleWidth } from "@earendil-works/pi-tui";
 
-import type { VimPosition, VimVisualSelection } from "vim-state";
+import type { VimPosition, VimVisualSelection } from "@thazhemadam/vim-state";
 
 const ESCAPE = "\x1b";
 const REVERSE_VIDEO_CURSOR = new RegExp(

@@ -3,24 +3,25 @@ import {
   type ExtensionAPI,
 } from "@earendil-works/pi-coding-agent";
 
-import type { VimEditorOptions } from "vim-state";
+import type { VimEditorOptions } from "@thazhemadam/vim-state";
 import { VimPiEditor } from "./editor.js";
 
 export default function vimPiExtension(pi: ExtensionAPI): void {
-  const piVimSystemClipboardFlag = "pi-vim-system-clipboard";
+  const piVimLocalRegistersFlag = "pi-vim-local-registers";
 
-  /** Build opt-in Vim hooks from Pi flags; by default, registers stay Vim-local. */
+  /** Mirror register writes to the system clipboard unless local registers are requested. */
   function vimOptions(): VimEditorOptions {
-    const useSystemClipboard = pi.getFlag(piVimSystemClipboardFlag);
+    const keepRegistersLocal = pi.getFlag(piVimLocalRegistersFlag);
     const onUnnamedRegisterWrite = ({ text }: { text: string }) =>
       void copyToClipboard(text).catch(() => undefined);
-    return useSystemClipboard ? { onUnnamedRegisterWrite } : {};
+    return keepRegistersLocal ? {} : { onUnnamedRegisterWrite };
   }
 
-  pi.registerFlag(piVimSystemClipboardFlag, {
-    description: "Mirror Vim's unnamed register to the system clipboard",
+  pi.registerFlag(piVimLocalRegistersFlag, {
+    description:
+      "Keep Vim registers local instead of using the system clipboard",
     type: "boolean",
-    default: true,
+    default: false,
   });
 
   let editor: VimPiEditor | undefined;
@@ -41,10 +42,10 @@ export default function vimPiExtension(pi: ExtensionAPI): void {
     editor?.restoreCursorStyle();
   });
 
-  pi.registerCommand("vim-pi-status", {
-    description: "Show vim-pi extension status",
+  pi.registerCommand("pi-vim-status", {
+    description: "Show pi-vim extension status",
     handler: async (_args, ctx) => {
-      ctx.ui.notify("vim-pi modal editor loaded.", "info");
+      ctx.ui.notify("pi-vim extension loaded.", "info");
     },
   });
 }

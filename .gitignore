@@ -1,6 +1,7 @@
 node_modules/
 dist/
 coverage/
+.turbo/
 .pi-dev/
 *.log
 .DS_Store

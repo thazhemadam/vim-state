@@ -1,10 +1,10 @@
 {
   "name": "vim-state-monorepo",
-  "version": "0.1.0",
   "private": true,
-  "license": "AGPL-3.0-only",
+  "license": "LGPL-3.0-only",
   "description": "Vim state engine and host integrations.",
   "type": "module",
+  "packageManager": "npm@11.16.0",
   "workspaces": [
     "packages/vim-state",
     "packages/integrations/*"
@@ -15,21 +15,27 @@
     ]
   },
   "scripts": {
-    "build": "npm --prefix packages/vim-state run build && npm --prefix packages/integrations/pi-vim run build",
-    "check": "npm run build && npm --prefix packages/vim-state run check && npm --prefix packages/integrations/pi-vim run check",
+    "build": "turbo run build",
+    "check": "turbo run check",
+    "check:packages": "node scripts/checks/package-contents.mjs",
     "clean": "rm -rf packages/vim-state/dist packages/integrations/pi-vim/dist",
-    "lint": "npm --prefix packages/vim-state run lint && npm --prefix packages/integrations/pi-vim run lint",
-    "lint:fix": "npm --prefix packages/vim-state run lint:fix && npm --prefix packages/integrations/pi-vim run lint:fix",
-    "test": "npm run build && npm --prefix packages/vim-state run test && npm --prefix packages/integrations/pi-vim run test",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "test": "turbo run test",
     "prepare": "npm run build",
-    "dev:pi": "npm run build && VIM_PI_PREFILL='Lorem ipsum dolor sit amet, consectetur adipiscing elit.\\nSed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' PI_CODING_AGENT_DIR=$PWD/.pi-dev/agent PI_CODING_AGENT_SESSION_DIR=$PWD/.pi-dev/sessions pi --no-extensions -e .",
+    "dev:pi": "npm run build && VIM_PI_PREFILL='Lorem ipsum dolor sit amet, consectetur adipiscing elit.\\nSed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' PI_CODING_AGENT_SESSION_DIR=$PWD/.pi-dev/sessions pi --no-extensions -e .",
     "dev:pi:clean": "rm -rf .pi-dev",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "changeset": "changeset",
+    "version-packages": "changeset version && npm install --package-lock-only --ignore-scripts"
   },
   "dependencies": {
+    "turbo": "2.10.9",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "1.0.0",
+    "@changesets/cli": "3.0.0",
     "oxlint": "^1.70.0",
     "prettier": "^3.8.4",
     "tsx": "^4.22.4"
