@@ -22,7 +22,7 @@
     "lint:fix": "npm --prefix packages/vim-state run lint:fix && npm --prefix packages/integrations/pi-vim run lint:fix",
     "test": "npm run build && npm --prefix packages/vim-state run test && npm --prefix packages/integrations/pi-vim run test",
     "prepare": "npm run build",
-    "dev:pi": "npm run build && VIM_PI_PREFILL='Lorem ipsum dolor sit amet, consectetur adipiscing elit.\\nSed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' PI_CODING_AGENT_DIR=$PWD/.pi-dev/agent PI_CODING_AGENT_SESSION_DIR=$PWD/.pi-dev/sessions pi --no-extensions -e .",
+    "dev:pi": "npm run build && VIM_PI_PREFILL='Lorem ipsum dolor sit amet, consectetur adipiscing elit.\\nSed do eiusmod tempor incididunt ut labore et dolore magna aliqua.' PI_CODING_AGENT_SESSION_DIR=$PWD/.pi-dev/sessions pi --no-extensions -e .",
     "dev:pi:clean": "rm -rf .pi-dev",
     "format": "prettier --write ."
   },
