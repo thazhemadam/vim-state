@@ -54,7 +54,7 @@ test("Pi extension installs a Vim editor", async () => {
     },
   } as never);
 
-  assert.equal(registeredFlag, "pi-vim-system-clipboard");
+  assert.equal(registeredFlag, "pi-vim-local-registers");
   assert.equal(typeof installedFactory, "function");
   assert.equal(statusCommand?.name, "pi-vim-status");
 
@@ -67,6 +67,61 @@ test("Pi extension installs a Vim editor", async () => {
   assert.deepEqual(notifications, [
     { message: "pi-vim extension loaded.", level: "info" },
   ]);
+});
+
+test("Pi extension mirrors registers to the clipboard unless opted out", () => {
+  for (const keepRegistersLocal of [false, true]) {
+    let editorFactory:
+      | ((tui: unknown, theme: unknown, keybindings: unknown) => VimPiEditor)
+      | undefined;
+    let registeredFlag:
+      | { name: string; options: { type: string; default: boolean } }
+      | undefined;
+
+    vimPiExtension({
+      getFlag: () => keepRegistersLocal,
+      on: (event: string, handler: unknown) => {
+        if (event === "session_start") {
+          (handler as (event: unknown, ctx: unknown) => void)(undefined, {
+            ui: {
+              setEditorComponent: (factory: typeof editorFactory) =>
+                (editorFactory = factory),
+            },
+          });
+        }
+      },
+      registerCommand: () => {},
+      registerFlag: (
+        name: string,
+        options: { type: string; default: boolean },
+      ) => {
+        registeredFlag = { name, options };
+      },
+    } as never);
+
+    assert.equal(registeredFlag?.name, "pi-vim-local-registers");
+    assert.equal(registeredFlag?.options.type, "boolean");
+    assert.equal(registeredFlag?.options.default, false);
+
+    const fakeTui = {
+      terminal: { rows: 24, write: () => {} },
+      requestRender: () => {},
+      setShowHardwareCursor: () => {},
+    };
+    const fakeTheme = { borderColor: (value: string) => value, selectList: {} };
+    const fakeKeybindings = { matches: () => false };
+    const editor = editorFactory?.(fakeTui, fakeTheme, fakeKeybindings);
+    const options = (
+      editor?.vimEditor as unknown as {
+        options: { onUnnamedRegisterWrite?: unknown };
+      }
+    ).options;
+
+    assert.equal(
+      typeof options.onUnnamedRegisterWrite,
+      keepRegistersLocal ? "undefined" : "function",
+    );
+  }
 });
 
 test("VimPiEditor tracks mode and cursor across insert/normal transitions", () => {
