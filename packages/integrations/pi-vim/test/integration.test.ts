@@ -5,7 +5,7 @@ import vimPiExtension, { VimPiEditor } from "../src/index.js";
 import { matchesKey } from "@earendil-works/pi-tui";
 
 import { normalizePiKey } from "../src/keymap.js";
-import { getVimMode, getVimModeLabel } from "vim-state";
+import { getVimMode, getVimModeLabel } from "@thazhemadam/vim-state";
 
 const ESC = "\x1b";
 
@@ -110,9 +110,10 @@ test("Pi extension mirrors registers to the clipboard unless opted out", () => {
     };
     const fakeTheme = { borderColor: (value: string) => value, selectList: {} };
     const fakeKeybindings = { matches: () => false };
-    const editor = editorFactory?.(fakeTui, fakeTheme, fakeKeybindings);
+    assert.ok(editorFactory);
+    const editor = editorFactory(fakeTui, fakeTheme, fakeKeybindings);
     const options = (
-      editor?.vimEditor as unknown as {
+      editor.vimEditor as unknown as {
         options: { onUnnamedRegisterWrite?: unknown };
       }
     ).options;

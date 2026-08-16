@@ -3,7 +3,7 @@ import {
   type ExtensionAPI,
 } from "@earendil-works/pi-coding-agent";
 
-import type { VimEditorOptions } from "vim-state";
+import type { VimEditorOptions } from "@thazhemadam/vim-state";
 import { VimPiEditor } from "./editor.js";
 
 export default function vimPiExtension(pi: ExtensionAPI): void {

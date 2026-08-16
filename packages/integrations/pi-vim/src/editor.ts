@@ -23,7 +23,7 @@ import {
   type VimPosition,
   type VimSnapshot,
   vimMachine,
-} from "vim-state";
+} from "@thazhemadam/vim-state";
 import { isPrintablePiInput, piInputToVimEvent } from "./keymap.js";
 import {
   highlightVisualSelection,

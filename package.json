@@ -15,8 +15,8 @@
     ]
   },
   "scripts": {
-    "build": "npm --prefix packages/vim-state run build && npm --prefix packages/integrations/pi-vim run build",
-    "check": "npm run build && npm --prefix packages/vim-state run check && npm --prefix packages/integrations/pi-vim run check",
+    "build": "npm run build --workspace @thazhemadam/vim-state && npm run build --workspace @thazhemadam/pi-vim",
+    "check": "npm run build && npm run check --workspaces --if-present",
     "clean": "rm -rf packages/vim-state/dist packages/integrations/pi-vim/dist",
     "lint": "npm --prefix packages/vim-state run lint && npm --prefix packages/integrations/pi-vim run lint",
     "lint:fix": "npm --prefix packages/vim-state run lint:fix && npm --prefix packages/integrations/pi-vim run lint:fix",

@@ -6,4 +6,4 @@ export {
   piInputToVimEvent,
 } from "./keymap.js";
 
-export * from "vim-state";
+export * from "@thazhemadam/vim-state";

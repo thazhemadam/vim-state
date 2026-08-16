@@ -1,9 +1,22 @@
 {
-  "name": "pi-vim",
+  "name": "@thazhemadam/pi-vim",
   "version": "0.1.0",
   "license": "AGPL-3.0-only",
   "description": "Vim-style modal editing integration for Pi.",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thazhemadam/vim-state.git",
+    "directory": "packages/integrations/pi-vim"
+  },
+  "homepage": "https://github.com/thazhemadam/vim-state/tree/main/packages/integrations/pi-vim#readme",
+  "bugs": {
+    "url": "https://github.com/thazhemadam/vim-state/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "keywords": [
     "pi-package",
     "pi-extension",
@@ -41,7 +54,7 @@
     "@earendil-works/pi-tui": "0.79.8"
   },
   "dependencies": {
-    "vim-state": "0.1.0",
+    "@thazhemadam/vim-state": "0.1.0",
     "xstate": "5.32.1"
   },
   "devDependencies": {
