@@ -1,6 +1,6 @@
 {
   "name": "@thazhemadam/vim-state",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "LGPL-3.0-only",
   "description": "Reusable Vim modal state machine and host-neutral editor semantics.",
   "type": "module",
