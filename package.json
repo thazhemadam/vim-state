@@ -30,8 +30,15 @@
     "version-packages": "changeset version && npm install --package-lock-only --ignore-scripts"
   },
   "dependencies": {
+    "@thazhemadam/pi-vim": "file:packages/integrations/pi-vim",
+    "@thazhemadam/vim-state": "file:packages/vim-state",
+    "@types/node": "^22.19.19",
     "turbo": "2.10.9",
     "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
   },
   "devDependencies": {
     "@changesets/changelog-github": "1.0.0",
