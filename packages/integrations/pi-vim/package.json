@@ -1,6 +1,6 @@
 {
   "name": "@thazhemadam/pi-vim",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "LGPL-3.0-only",
   "description": "Vim-style modal editing integration for Pi.",
   "type": "module",
@@ -57,7 +57,7 @@
     "@earendil-works/pi-tui": ">=0.79.8 <=0.84.2"
   },
   "dependencies": {
-    "@thazhemadam/vim-state": "^0.1.0",
+    "@thazhemadam/vim-state": "^0.1.1",
     "xstate": "5.32.1"
   },
   "devDependencies": {
