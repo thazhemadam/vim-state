@@ -37,8 +37,15 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Inspect package contents
+      - name: Inspect and install package contents
         run: npm run check:packages
+
+      - name: Verify the git package source
+        run: |
+          install_dir="$(mktemp -d)"
+          git archive HEAD | tar -x -C "$install_dir"
+          npm install --omit=dev --prefix "$install_dir"
+          test -f "$install_dir/packages/integrations/pi-vim/dist/index.js"
 
   minimum-pi:
     name: Minimum Pi compatibility

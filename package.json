@@ -17,7 +17,7 @@
   "scripts": {
     "build": "turbo run build",
     "check": "turbo run check",
-    "check:packages": "node scripts/checks/package-contents.mjs",
+    "check:packages": "node scripts/checks/package-contents.mjs && node scripts/checks/package-install.mjs",
     "clean": "rm -rf packages/vim-state/dist packages/integrations/pi-vim/dist",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
