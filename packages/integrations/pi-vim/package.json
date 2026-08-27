@@ -53,8 +53,8 @@
     "test": "tsx --test test/**/*.test.ts"
   },
   "peerDependencies": {
-    "@earendil-works/pi-coding-agent": ">=0.79.8 <=0.84.2",
-    "@earendil-works/pi-tui": ">=0.79.8 <=0.84.2"
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
   },
   "dependencies": {
     "@thazhemadam/vim-state": "^0.1.1",
