@@ -54,6 +54,17 @@ test("VimEditor mixin forwards semantic edits to the host editor", () => {
   assert.deepEqual(editor.lines, ["abc"]);
 });
 
+test("VimEditor stops vertical movement when the host intercepts arrow input", () => {
+  const editor = new FakeVimEditor();
+  editor.lines = ["abc", "def"];
+  editor.cursor = { line: 0, col: 1 };
+
+  editor.vimEditor.move("down");
+
+  assert.deepEqual(editor.inputs, ["\x1b[B"]);
+  assert.deepEqual(editor.cursor, { line: 0, col: 1 });
+});
+
 test("VimEditor emits unnamed-register writes to the configured hook", () => {
   const editor = new FakeVimEditor();
   editor.vimEditor.setOptions({

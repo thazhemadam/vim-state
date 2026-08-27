@@ -305,7 +305,11 @@ class VimEditorCore implements VimEditor {
   /** Move left until the Normal-mode cursor sits on a character, or column 0 for an empty line. */
   clampCursorColumn(): void {
     while (this.cursor.col > normalMaxColumn(this.currentLine)) {
+      const before = { ...this.cursor };
       this.host.sendInputToEditor(ARROW_LEFT);
+      if (samePosition(this.cursor, before)) {
+        return;
+      }
     }
   }
 
@@ -743,10 +747,18 @@ class VimEditorCore implements VimEditor {
   /** Move to a zero-based position using host editor cursor primitives. */
   private moveCursorToPosition(position: VimPosition): void {
     while (this.cursor.line < position.line) {
+      const before = { ...this.cursor };
       this.host.sendInputToEditor(ARROW_DOWN);
+      if (samePosition(this.cursor, before)) {
+        return;
+      }
     }
     while (this.cursor.line > position.line) {
+      const before = { ...this.cursor };
       this.host.sendInputToEditor(ARROW_UP);
+      if (samePosition(this.cursor, before)) {
+        return;
+      }
     }
     this.moveCaretToColumn(position.col);
   }
