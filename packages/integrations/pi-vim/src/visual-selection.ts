@@ -53,59 +53,67 @@ export function highlightVisualSelection(
   selection: VimVisualSelection,
   width: number,
   terminalRows: number,
-): void {
-  const layout = requirePiVisualLayout(editor, width, terminalRows);
-  const bufferLines = editor.getLines();
-  const segments = mapVisualLineSegments(bufferLines, layout.lines);
-  const ranges = visualSelectionRanges(
-    bufferLines,
-    selection,
-    editor.getCursor(),
-  );
-  for (const segment of segments) {
-    const range = ranges.get(segment.logicalLine);
-    if (!range) {
-      continue;
-    }
-
-    const visibleIndex = segment.visualLine - layout.scrollOffset;
-    if (visibleIndex < 0 || visibleIndex >= layout.visibleLineCount) {
-      continue;
-    }
-
-    const renderedIndex = visibleIndex + 1;
-    const renderedLine = renderedLines[renderedIndex];
-    if (renderedLine === undefined) {
-      continue;
-    }
-
-    const line = bufferLines[segment.logicalLine] ?? "";
-    const start = Math.max(range.start, segment.start);
-    const end = Math.min(range.end, segment.end);
-    let startColumn =
-      layout.paddingX + visibleWidth(line.slice(segment.start, start));
-    let endColumn =
-      startColumn + visibleWidth(line.slice(start, Math.max(start, end)));
-
-    // Linewise Visual mode includes an empty line's cursor cell.
-    if (
-      selection.mode === "linewise" &&
-      segment.start === 0 &&
-      segment.end === 0
-    ) {
-      startColumn = layout.paddingX;
-      endColumn = startColumn + 1;
-    }
-
-    if (endColumn <= startColumn) {
-      continue;
-    }
-
-    renderedLines[renderedIndex] = highlightColumns(
-      renderedLine,
-      startColumn,
-      endColumn,
+): boolean {
+  try {
+    const layout = requirePiVisualLayout(editor, width, terminalRows);
+    const bufferLines = editor.getLines();
+    const segments = mapVisualLineSegments(bufferLines, layout.lines);
+    const ranges = visualSelectionRanges(
+      bufferLines,
+      selection,
+      editor.getCursor(),
     );
+    for (const segment of segments) {
+      const range = ranges.get(segment.logicalLine);
+      if (!range) {
+        continue;
+      }
+
+      const visibleIndex = segment.visualLine - layout.scrollOffset;
+      if (visibleIndex < 0 || visibleIndex >= layout.visibleLineCount) {
+        continue;
+      }
+
+      const renderedIndex = visibleIndex + 1;
+      const renderedLine = renderedLines[renderedIndex];
+      if (renderedLine === undefined) {
+        continue;
+      }
+
+      const line = bufferLines[segment.logicalLine] ?? "";
+      const start = Math.max(range.start, segment.start);
+      const end = Math.min(range.end, segment.end);
+      let startColumn =
+        layout.paddingX + visibleWidth(line.slice(segment.start, start));
+      let endColumn =
+        startColumn + visibleWidth(line.slice(start, Math.max(start, end)));
+
+      // Linewise Visual mode includes an empty line's cursor cell.
+      if (
+        selection.mode === "linewise" &&
+        segment.start === 0 &&
+        segment.end === 0
+      ) {
+        startColumn = layout.paddingX;
+        endColumn = startColumn + 1;
+      }
+
+      if (endColumn <= startColumn) {
+        continue;
+      }
+
+      renderedLines[renderedIndex] = highlightColumns(
+        renderedLine,
+        startColumn,
+        endColumn,
+      );
+    }
+    return true;
+  } catch (error) {
+    if (error instanceof IncompatiblePiLayoutError) {
+      return false;
+    }
+    throw error;
   }
 }
 
@@ -211,11 +219,18 @@ function mapVisualLineSegments(
   return segments;
 }
 
+class IncompatiblePiLayoutError extends Error {
+  constructor(cause?: unknown) {
+    super(
+      "pi-vim cannot map this Pi editor's wrapped layout",
+      cause === undefined ? undefined : { cause },
+    );
+    this.name = "IncompatiblePiLayoutError";
+  }
+}
+
 function incompatiblePiLayout(cause?: unknown): Error {
-  return new Error(
-    "vim-pi cannot map this Pi editor's wrapped layout; install the supported Pi 0.79.8 release",
-    cause === undefined ? undefined : { cause },
-  );
+  return new IncompatiblePiLayoutError(cause);
 }
 
 /** Convert an anchor and cursor into inclusive logical-line ranges. */

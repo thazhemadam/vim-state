@@ -1534,7 +1534,7 @@ test("VimPiEditor highlights Visual selections", () => {
   }
 });
 
-test("VimPiEditor rejects incompatible Pi visual layout internals", () => {
+test("VimPiEditor omits Visual highlighting with incompatible Pi layout internals", () => {
   const editor = createEditorWithText("abcdef");
   play(editor, [ESC, "0", "v", "$"]);
   const layoutInternals = editor as unknown as {
@@ -1549,9 +1549,14 @@ test("VimPiEditor rejects incompatible Pi visual layout internals", () => {
     },
   });
 
-  assert.throws(
-    () => editor.render(12),
-    /vim-pi cannot map this Pi editor's wrapped layout/,
+  const rendered = editor.render(12);
+  assert.equal(
+    rendered.some((line) => line.includes("\x1b[7m")),
+    false,
+  );
+  assert.equal(
+    stripAnsi(rendered.at(-1) ?? "").endsWith(" VISUAL "),
+    true,
   );
 });
 
