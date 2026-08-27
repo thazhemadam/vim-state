@@ -115,6 +115,19 @@ export class VimPiEditor extends VimEditor(PiEditorHost) {
     const previousMode = getVimMode(previousSnapshot);
     const event = piInputToVimEvent(data);
 
+    // Pi normally gives its autocomplete picker first refusal on Escape. Let
+    // the host dismiss it before Vim can use the same key to leave Insert or
+    // Replace mode; otherwise the picker can survive into Normal mode.
+    if (
+      isInsertHistorySession(previousSnapshot) &&
+      this.isShowingAutocomplete() &&
+      this.appKeybindings.matches(data, "app.interrupt")
+    ) {
+      super.handleInput(data);
+      this.tui.requestRender();
+      return;
+    }
+
     if (this.handleNormalHistoryKey(previousSnapshot, event.key)) {
       this.tui.requestRender();
       return;

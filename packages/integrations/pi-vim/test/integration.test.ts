@@ -155,6 +155,35 @@ test("VimPiEditor tracks mode and cursor across insert/normal transitions", () =
   });
 });
 
+test("VimPiEditor lets Escape dismiss autocomplete before leaving Insert mode", () => {
+  const editor = createEditor(
+    [],
+    (data, action) =>
+      action === "app.interrupt" && matchesKey(data, "escape"),
+  );
+  editor.setText("one\ntwo");
+  editor.vimEditor.move({ line: 0, col: 2 });
+  showAutocomplete(editor);
+
+  assert.equal(editor.isShowingAutocomplete(), true);
+
+  editor.handleInput(ESC);
+
+  assert.equal(editor.isShowingAutocomplete(), false);
+  assertEditor(editor, {
+    cursor: { line: 0, col: 2 },
+    mode: "insert",
+  });
+
+  editor.handleInput(ESC);
+  editor.handleInput("j");
+
+  assertEditor(editor, {
+    cursor: { line: 1, col: 1 },
+    mode: "normal",
+  });
+});
+
 test("VimPiEditor applies Normal-mode cursor navigation", () => {
   for (const spec of [
     {
@@ -2028,6 +2057,37 @@ function play(editor: VimPiEditor, keys: readonly string[]): void {
   for (const key of keys) {
     editor.handleInput(key);
   }
+}
+
+function showAutocomplete(editor: VimPiEditor): void {
+  editor.setAutocompleteProvider({
+    getSuggestions: async () => null,
+    applyCompletion: () => ({
+      lines: editor.getLines(),
+      cursorLine: editor.getCursor().line,
+      cursorCol: editor.getCursor().col,
+    }),
+  });
+  (
+    editor as unknown as {
+      applyAutocompleteSuggestions: (
+        suggestions: {
+          prefix: string;
+          items: Array<{ value: string; label: string }>;
+        },
+        state: "regular" | "force",
+      ) => void;
+    }
+  ).applyAutocompleteSuggestions(
+    {
+      prefix: "@",
+      items: [
+        { value: "first.ts", label: "first.ts" },
+        { value: "second.ts", label: "second.ts" },
+      ],
+    },
+    "regular",
+  );
 }
 
 function createEditorWithText(text: string): VimPiEditor {
