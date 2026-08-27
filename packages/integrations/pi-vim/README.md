@@ -10,10 +10,7 @@ The extension provides colored mode labels, mode-specific cursor shapes, Visual 
 ## Requirements
 
 - Node.js 22.19.0 or later
-- `@earendil-works/pi-coding-agent` 0.79.8 through 0.84.2
-- `@earendil-works/pi-tui` 0.79.8 through 0.84.2
-
-The package declares this Pi range as peer dependencies. Releases outside this range do not receive compatibility checks.
+- Pi 0.79.8 or later
 
 ## Install
 
@@ -21,6 +18,12 @@ Install the extension from npm:
 
 ```bash
 pi install npm:@thazhemadam/pi-vim
+```
+
+To install a specific Git revision instead:
+
+```bash
+pi install git:github.com/thazhemadam/vim-state@<commit>
 ```
 
 Then start or restart Pi. The prompt starts in Insert mode.
@@ -179,7 +182,7 @@ This package implements a Vim subset, not a Vim runtime. It does not support the
 
 Positions use UTF-16 string columns, so some multi-code-point graphemes behave differently than they do in Vim.
 
-Visual highlighting uses the wrapped Pi editor layout. Use a Pi version in the declared compatibility range to avoid layout errors.
+If Pi's wrapped editor layout becomes incompatible, Visual commands still work, but pi-vim omits selection highlighting.
 
 ## Local development
 
@@ -205,6 +208,8 @@ npm run check
 npm test
 npm run check:packages
 ```
+
+The package check verifies the tarball contents, production installation, and Pi loading. CI also builds a clean Git package without development dependencies.
 
 ## Programmatic exports
 

@@ -108,14 +108,14 @@ npm test
 
 Useful commands:
 
-| Command                  | Action                                 |
-| ------------------------ | -------------------------------------- |
-| `npm run build`          | Build all packages.                    |
-| `npm run check`          | Run TypeScript checks and Oxlint.      |
-| `npm test`               | Run all package tests.                 |
-| `npm run check:packages` | Inspect the files in each npm tarball. |
-| `npm run format`         | Format the repository with Prettier.   |
-| `npm run clean`          | Delete generated package output.       |
+| Command                  | Action                                      |
+| ------------------------ | ------------------------------------------- |
+| `npm run build`          | Build all packages.                         |
+| `npm run check`          | Run TypeScript checks and Oxlint.           |
+| `npm test`               | Run all package tests.                      |
+| `npm run check:packages` | Verify npm tarballs and Pi package loading. |
+| `npm run format`         | Format the repository with Prettier.        |
+| `npm run clean`          | Delete generated package output.            |
 
 Integration-specific development commands belong in each integration README. For example, the [pi-vim README](packages/integrations/pi-vim/README.md#local-development) documents its local host launcher.
 
