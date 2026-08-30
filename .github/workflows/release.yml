@@ -79,8 +79,8 @@ jobs:
         with:
           github-token: ${{ steps.release-app.outputs.token }}
           script: npm run version-packages
-          commit-message: "chore(release): version packages"
-          pr-title: "chore(release): version packages"
+          commit-message: "build(release): version packages"
+          pr-title: "build(release): version packages"
           pr-base-branch: main
 
   pack:
