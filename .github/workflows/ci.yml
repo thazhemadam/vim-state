@@ -37,8 +37,15 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Inspect package contents
+      - name: Inspect and install package contents
         run: npm run check:packages
+
+      - name: Verify the git package source
+        run: |
+          install_dir="$(mktemp -d)"
+          git archive HEAD | tar -x -C "$install_dir"
+          npm install --omit=dev --prefix "$install_dir"
+          test -f "$install_dir/packages/integrations/pi-vim/dist/index.js"
 
   minimum-pi:
     name: Minimum Pi compatibility
@@ -60,18 +67,53 @@ jobs:
 
       - name: Install minimum supported Pi
         run: |
-          npm install --no-save --package-lock=false --legacy-peer-deps \
-            @earendil-works/pi-coding-agent@0.79.8 \
-            @earendil-works/pi-tui@0.79.8
+          node scripts/checks/set-pi-development-version.mjs 0.79.8
+          npm install --package-lock=false --legacy-peer-deps
           rm -rf .turbo packages/vim-state/dist packages/integrations/pi-vim/dist
 
       - name: Verify Pi versions
-        run: |
-          test "$(node -p "require('./node_modules/@earendil-works/pi-coding-agent/package.json').version")" = "0.79.8"
-          test "$(node -p "require('./node_modules/@earendil-works/pi-tui/package.json').version")" = "0.79.8"
+        env:
+          EXPECTED_PI_VERSION: 0.79.8
+        run: node scripts/checks/pi-development-version.mjs
 
       - name: Check against minimum Pi
         run: npm run check
 
       - name: Test against minimum Pi
+        run: npm test
+
+  latest-pi:
+    name: Latest Pi compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install latest Pi
+        run: |
+          pi_version="$(npm view @earendil-works/pi-coding-agent@latest version)"
+          test "$pi_version" = "$(npm view @earendil-works/pi-tui@latest version)"
+          node scripts/checks/set-pi-development-version.mjs "$pi_version"
+          npm install --package-lock=false --legacy-peer-deps
+          echo "EXPECTED_PI_VERSION=$pi_version" >> "$GITHUB_ENV"
+          rm -rf .turbo packages/vim-state/dist packages/integrations/pi-vim/dist
+
+      - name: Verify installed Pi version
+        run: node scripts/checks/pi-development-version.mjs
+
+      - name: Check against latest Pi
+        run: npm run check
+
+      - name: Test against latest Pi
         run: npm test
