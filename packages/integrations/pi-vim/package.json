@@ -1,6 +1,6 @@
 {
   "name": "@thazhemadam/pi-vim",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "license": "LGPL-3.0-only",
   "description": "Vim-style modal editing integration for Pi.",
   "type": "module",
