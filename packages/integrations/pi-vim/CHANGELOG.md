@@ -1,5 +1,11 @@
 # @thazhemadam/pi-vim
 
+## 0.1.3
+
+### Patch Changes
+
+- [`f80b74d`](https://github.com/thazhemadam/vim-state/commit/f80b74d8ed9feb3b345df7364102ae262bb71840) - Verify compatibility with Pi 1.0.4 and use it for development and CI checks.
+
 ## 0.1.2
 
 ### Patch Changes
